@@ -8,6 +8,16 @@ import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
   React.useEffect(() => {
+    // 1. Check for Standalone Inline Data
+    if (window.__FESTIVE_MEMORY__) {
+      const data = window.__FESTIVE_MEMORY__;
+      if (data.photos) useStore.getState().setPhotos(data.photos);
+      if (data.bgmName && data.bgmUrl) useStore.getState().setBgm(data.bgmUrl, data.bgmName);
+      console.log("Standalone Memory Hydrated! 🎄");
+      return;
+    }
+
+    // 2. Check for Cloud ID
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     if (id) {

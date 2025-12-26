@@ -1,7 +1,7 @@
 import React from 'react';
 import useStore from '../store';
 
-import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Share2, Upload, Snowflake } from 'lucide-react';
+import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Share2, Upload, Snowflake, FileCode } from 'lucide-react';
 
 const SERVICES = [
   { url: 'https://jsonblob.com/api/jsonBlob', method: 'POST' },
@@ -9,8 +9,9 @@ const SERVICES = [
 ];
 
 export default function UI() {
-  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera } = useStore();
+  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos } = useStore();
   const [isSharing, setIsSharing] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
   const audioRef = React.useRef(null);
 
   // Draggable Panel State
@@ -227,27 +228,75 @@ export default function UI() {
     input.click();
   };
 
-  const compressImage = (url) => {
+  const toBase64 = (url) => {
     return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onerror = () => reject(new Error("Failed to load image for compression"));
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX = 300; // Reduced from 400
-        let w = img.width;
-        let h = img.height;
-        if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } }
-        else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        // Use JPEG 0.5 for aggressive compression
-        resolve(canvas.toDataURL('image/jpeg', 0.5));
-      };
-      img.src = url;
+      if (!url || url.startsWith('data:')) return resolve(url);
+      fetch(url)
+        .then(res => res.blob())
+        .then(blob => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        })
+        .catch(reject);
     });
+  };
+
+  const handleExportHTML = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      // 1. Serialize Photos (high quality but compressed)
+      const serializedPhotos = await Promise.all(photos.map(async (p) => {
+        const base64 = await compressImage(p.url);
+        return { ...p, url: base64 };
+      }));
+
+      // 2. Serialize BGM if user uploaded it
+      let serializedBgmUrl = bgmUrl;
+      if (bgmUrl && bgmUrl.startsWith('blob:')) {
+        serializedBgmUrl = await toBase64(bgmUrl);
+      }
+
+      const memoryData = {
+        photos: serializedPhotos,
+        bgmName: bgmName,
+        bgmUrl: serializedBgmUrl
+      };
+
+      // 3. Get Base HTML and Inject
+      // We take the current HTML but we need to strip any existing __FESTIVE_MEMORY__ block
+      let html = document.documentElement.outerHTML;
+      
+      // Clean up existing memory scripts to avoid bloating or collisions
+      html = html.replace(/<script id="festive-memory-data">[\s\S]*?<\/script>/g, "");
+      
+      const dataScript = `<script id="festive-memory-data">window.__FESTIVE_MEMORY__ = ${JSON.stringify(memoryData)};</script>`;
+      
+      // Insert before </head> or <body>
+      if (html.includes('</head>')) {
+        html = html.replace('</head>', `${dataScript}</head>`);
+      } else {
+        html = html.replace('<body>', `<body>${dataScript}`);
+      }
+
+      // 4. Download
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Merry_Christmas_${bgmName || 'Memory'}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      alert("Standalone HTML Generated! 🎁 You can now share this file directly.");
+    } catch (err) {
+      console.error(err);
+      alert("Export failed: " + err.message);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -298,7 +347,7 @@ export default function UI() {
           <span className="text-[10px] sm:text-xs font-medium tracking-widest uppercase">Gesture: {gesture}</span>
         </div>
         <div className="text-[9px] sm:text-[10px] opacity-50 uppercase tracking-tighter">
-          Phase: {phase} | Sync: 05:25:00
+          Phase: {phase} | Sync: 05:30:00
         </div>
         {/* Hidden on very small screens or made smaller */}
         <div className="hidden sm:block mt-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-[10px] max-w-[240px]">
@@ -376,7 +425,7 @@ export default function UI() {
               </div>
               <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">{isSharing ? '...' : 'Share'}</span>
             </button>
-            <button 
+              <button 
                 onClick={handleImport}
                 className="flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl transition-colors group"
               >
@@ -384,6 +433,17 @@ export default function UI() {
                    <Upload size={14} className="text-vintage-gold rotate-180" />
                 </div>
                 <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">Import</span>
+              </button>
+
+              <button 
+                onClick={handleExportHTML}
+                disabled={isExporting}
+                className={`flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl transition-colors group ${isExporting ? 'opacity-50' : ''}`}
+              >
+                <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
+                   <FileCode size={14} className="text-vintage-gold" />
+                </div>
+                <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">{isExporting ? '...' : 'Export'}</span>
               </button>
               
             <button 
