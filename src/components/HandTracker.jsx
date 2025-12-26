@@ -136,24 +136,40 @@ export default function HandTracker() {
     const dist = (p1, p2) => Math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2);
     const palmSize = dist(wrist, landmarks[5]) || 0.1;
     
-    const relAvgDist = ([4, 8, 12, 16, 20].reduce((sum, idx) => sum + dist(landmarks[idx], wrist), 0) / 5) / palmSize;
-    
+    // Finger indices for counting
+    const fingerIndices = [
+      { tip: 8, mid: 6 },  // Index
+      { tip: 12, mid: 10 }, // Middle
+      { tip: 16, mid: 14 }, // Ring
+      { tip: 20, mid: 18 }  // Pinky
+    ];
+
+    let extendedFingers = 0;
+    fingerIndices.forEach(f => {
+      const tipDist = dist(landmarks[f.tip], wrist);
+      const midDist = dist(landmarks[f.mid], wrist);
+      if (tipDist > midDist * 1.25) extendedFingers++;
+    });
+
+    // Special check for thumb
+    const thumbDist = dist(landmarks[4], landmarks[2]);
+    if (thumbDist > palmSize * 0.85) extendedFingers++;
+
+    // Wave detection
     const prevX = waveBuffer.current.length > 0 ? waveBuffer.current[waveBuffer.current.length - 1] : wrist.x;
     waveBuffer.current.push(wrist.x);
     if (waveBuffer.current.length > 15) waveBuffer.current.shift();
     setHandVelocityX(wrist.x - prevX);
-
     const xRange = Math.max(...waveBuffer.current) - Math.min(...waveBuffer.current);
-    const isWaving = xRange > 0.1 && relAvgDist > 1.8;
 
     let detected = 'none';
-    if (isWaving) detected = 'wave';
-    else if (relAvgDist < 1.4) detected = 'fist';
-    else if (relAvgDist > 2.0) detected = 'open';
+    if (xRange > 0.08 && extendedFingers >= 3) detected = 'wave';
+    else if (extendedFingers >= 4) detected = 'open';
+    else if (extendedFingers <= 1) detected = 'fist';
     else if (dist(thumbTip, indexTip) / palmSize < 0.35) detected = 'pinch';
     
     setGesture(detected);
-    setDebugGesture(detected);
+    setDebugGesture(`${detected} (${extendedFingers})`);
   };
 
   return (
