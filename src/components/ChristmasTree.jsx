@@ -437,19 +437,19 @@ function SmartPhoto({ photo, index, total }) {
       
       // Convert world target to local parent coordinates
       const targetLocal = meshRef.current.parent.worldToLocal(_v1.clone());
-      meshRef.current.position.lerp(targetLocal, 0.25); // snappier magnet effect
+      meshRef.current.position.lerp(targetLocal, 0.3); // snappier magnet effect
       
       // Positive View Lock: lookAt camera with world-up orientation
       const parentWorldQuat = new THREE.Quaternion();
       meshRef.current.parent.getWorldQuaternion(parentWorldQuat);
       const localFaceQuat = state.camera.quaternion.clone().multiply(parentWorldQuat.invert());
-      meshRef.current.quaternion.slerp(localFaceQuat, 0.25);
+      meshRef.current.quaternion.slerp(localFaceQuat, 0.3);
       
-      // Scale: Target ~75% screen height for a premium feel
+      // Scale: Target 70% screen height as requested
       const vFOV = (state.camera.fov * Math.PI) / 180;
       const visibleHeight = 2 * Math.tan(vFOV / 2) * dist;
-      const targetScale = visibleHeight * 0.7; // 70% as requested
-      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 0.25);
+      const targetScale = visibleHeight * 0.7; 
+      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 0.3);
       
     } else {
       meshRef.current.position.lerp(targetPos, 0.05);
