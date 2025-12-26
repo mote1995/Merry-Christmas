@@ -299,8 +299,8 @@ export default function ChristmasTree() {
         let closestId = null;
         let minScore = Infinity;
         
-        // Broaden search to entire ringRef to ensure we hit photos even if nested deep
         if (ringRef.current) {
+          ringRef.current.updateMatrixWorld();
           ringRef.current.traverse((child) => {
             if (child.userData && child.userData.id) {
               child.getWorldPosition(_v1);
@@ -308,8 +308,8 @@ export default function ChristmasTree() {
               
               const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
               
-              // Only consider things roughly in front (depth < 0.9ndc)
-              if (_v1.z < 0.9) {
+              // Consider anything roughly in front (depth < 1.0ndc)
+              if (_v1.z < 1.0) {
                 const score = distToCenter + (_v1.z + 1) * 0.05;
                 if (score < minScore) {
                   minScore = score;
