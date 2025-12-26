@@ -116,14 +116,23 @@ export default function HandTracker() {
     setHandVelocityX(wrist.x - prevX);
     const xRange = Math.max(...waveBuffer.current) - Math.min(...waveBuffer.current);
 
-    let detected = 'none';
-    if (xRange > 0.08 && extendedFingers >= 3) detected = 'wave';
-    else if (extendedFingers >= 3) detected = 'open';
-    else if (extendedFingers <= 1) detected = 'fist';
-    else if (dist(thumbTip, indexTip) / palmSize < 0.35) detected = 'pinch';
-    
-    setGesture(detected);
-    setDebugGesture(`${detected} (${extendedFingers})`);
+    let rawDetected = 'none';
+    if (xRange > 0.08 && extendedFingers >= 3) rawDetected = 'wave';
+    else if (extendedFingers >= 3) rawDetected = 'open';
+    else if (extendedFingers <= 1) rawDetected = 'fist';
+    else if (dist(thumbTip, indexTip) / palmSize < 0.35) rawDetected = 'pinch';
+
+    // Stability Buffer: Require 5 frames of consistency
+    gestureBuffer.current.push(rawDetected);
+    if (gestureBuffer.current.length > 5) gestureBuffer.current.shift();
+
+    const allMatch = gestureBuffer.current.every(g => g === rawDetected);
+    const isWave = rawDetected === 'wave'; // Wave is dynamic, trust it faster
+
+    if (allMatch || (isWave && gestureBuffer.current.filter(g => g === 'wave').length >= 2)) {
+      setGesture(rawDetected);
+      setDebugGesture(`${rawDetected} (${extendedFingers})`);
+    }
   };
 
   return (
