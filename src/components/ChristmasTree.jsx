@@ -489,7 +489,7 @@ function SmartPhoto({ photo, index, total }) {
       onPointerOut={(e) => {
         e.stopPropagation();
         document.body.style.cursor = 'auto';
-        if (isFocused) setFocusedId(null);
+        // Removed auto-clear to prevent gesture flickering
       }}
     >
       <planeGeometry args={[1, 1, 1]} />
