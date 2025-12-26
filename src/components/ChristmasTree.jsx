@@ -1,0 +1,418 @@
+import React, { useRef, useMemo, useEffect } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { Instance, Instances, useTexture } from '@react-three/drei';
+import * as THREE from 'three';
+import gsap from 'gsap';
+import { generateTreePoints, generateSpiralPoints, generateNebulaPoints } from '../utils/geometry';
+import useStore from '../store';
+
+const PARTICLE_COUNT = 3000;
+const SPARKLE_COUNT = 300;
+
+// Scratch vectors for performance
+const _v1 = new THREE.Vector3();
+const _m1 = new THREE.Matrix4();
+const _q1 = new THREE.Quaternion();
+const _s1 = new THREE.Vector3();
+const COLORS = [
+  '#D4AF37', // Retro Gold
+  '#FF0000', // Bright Red
+  '#0047AB', // Cobalt Blue
+  '#FF69B4', // Hot Pink
+  '#C0C0C0', // Silver
+  '#800020', // Burgundy
+  '#5D8AA8', // Grey Blue
+  '#E0BFB8', // Rose Pink
+  '#F7E7CE', // Champagne
+  '#FFD700', // Pure Gold
+];
+
+export default function ChristmasTree() {
+  const { phase, setPhase, photos, gesture, focusedId, setFocusedId, handVelocityX } = useStore();
+  const particlesRef = useRef();
+  const sparklesRef = useRef();
+  const ringRef = useRef();
+  const targetDirection = useRef(1); // 1 or -1
+  
+  // Base geometry points
+  const treePoints = useMemo(() => generateTreePoints(PARTICLE_COUNT), []);
+  const spiralPoints = useMemo(() => generateSpiralPoints(SPARKLE_COUNT, 10, 5, 8), []); // More turns for denser spiral
+  const nebulaPoints = useMemo(() => generateNebulaPoints(PARTICLE_COUNT + SPARKLE_COUNT), []);
+
+  // Positions and velocities for dynamic behavior
+  const positions = useMemo(() => treePoints.map(p => p.clone()), [treePoints]);
+  const velocities = useMemo(() => treePoints.map(() => new THREE.Vector3()), [treePoints]);
+  
+  const ornamentPositions = useMemo(() => spiralPoints.map(p => p.clone()), [spiralPoints]);
+
+  useEffect(() => {
+    // Phase logic based on gesture
+    if (phase === 'tree' && gesture === 'open') {
+      setPhase('blooming');
+    } else if (phase === 'nebula' && gesture === 'fist') {
+      setPhase('collapsing');
+    }
+  }, [gesture, phase]);
+
+  // Transition handling with GSAP
+  useEffect(() => {
+    if (phase === 'blooming') {
+      const tl = gsap.timeline({
+        onComplete: () => setPhase('nebula')
+      });
+      
+      // Animate particles to nebula
+      positions.forEach((pos, i) => {
+        tl.to(pos, {
+          x: nebulaPoints[i].x,
+          y: nebulaPoints[i].y,
+          z: nebulaPoints[i].z,
+          duration: 2,
+          ease: 'expo.out'
+        }, 0);
+      });
+
+      // Animate ornaments to nebula outer ring
+      ornamentPositions.forEach((pos, i) => {
+        const target = nebulaPoints[PARTICLE_COUNT + i];
+        tl.to(pos, {
+          x: target.x,
+          y: target.y,
+          z: target.z,
+          duration: 2.2,
+          ease: 'expo.out'
+        }, 0);
+      });
+    } else if (phase === 'collapsing') {
+      const tl = gsap.timeline({
+        onComplete: () => setPhase('tree')
+      });
+
+      positions.forEach((pos, i) => {
+        tl.to(pos, {
+          x: treePoints[i].x,
+          y: treePoints[i].y,
+          z: treePoints[i].z,
+          duration: 1.5,
+          ease: 'power3.inOut'
+        }, 0);
+      });
+
+      ornamentPositions.forEach((pos, i) => {
+        tl.to(pos, {
+          x: spiralPoints[i].x,
+          y: spiralPoints[i].y,
+          z: spiralPoints[i].z,
+          duration: 1.7,
+          ease: 'power3.inOut'
+        }, 0);
+      });
+    }
+  }, [phase]);
+
+  useFrame((state, delta) => {
+    const { mouse } = state;
+    const mousePos = new THREE.Vector3(mouse.x * 10, mouse.y * 10, 0);
+
+    // Update Particles
+    if (particlesRef.current) {
+      const mesh = particlesRef.current;
+      const dummy = new THREE.Object3D();
+
+      positions.forEach((pos, i) => {
+        // Ripple effect logic (if phase is tree)
+        if (phase === 'tree') {
+          const dist = pos.distanceTo(mousePos);
+          if (dist < 3) {
+            const force = (3 - dist) / 3;
+            const dir = pos.clone().sub(mousePos).normalize();
+            pos.add(dir.multiplyScalar(force * 0.2));
+          }
+          // Slow return to origin
+          const origin = treePoints[i];
+          pos.lerp(origin, 0.05);
+        }
+
+        // Subtle twinkle for main foliage
+        const foliageTwinkle = Math.sin(state.clock.elapsedTime * 3 + i) * 0.2 + 0.8;
+        dummy.position.copy(pos);
+        dummy.scale.setScalar(0.05 * foliageTwinkle);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+
+    // Initialize Sparkling Particle Colors once
+    if (sparklesRef.current && !sparklesRef.current.instanceColor) {
+      for (let i = 0; i < SPARKLE_COUNT; i++) {
+        sparklesRef.current.setColorAt(i, new THREE.Color(COLORS[i % COLORS.length]));
+      }
+      sparklesRef.current.instanceColor.needsUpdate = true;
+    }
+
+    // Update Sparkling Particles
+    if (sparklesRef.current) {
+      const mesh = sparklesRef.current;
+      const dummy = new THREE.Object3D();
+
+      ornamentPositions.forEach((pos, i) => {
+        if (phase === 'tree') {
+          const dist = pos.distanceTo(mousePos);
+          if (dist < 4) {
+            const force = (4 - dist) / 4;
+            const dir = pos.clone().sub(mousePos).normalize();
+            pos.add(dir.multiplyScalar(force * 0.15));
+          }
+          const origin = spiralPoints[i];
+          pos.lerp(origin, 0.05);
+        }
+
+        dummy.position.copy(pos);
+        
+        // Intensified sparkling effect: Random flickering (reduced frequency)
+        const flicker = Math.sin(state.clock.elapsedTime * 5 + i * 100) * 0.5 + 0.5;
+        dummy.scale.setScalar(0.7 + flicker * 0.6);
+        
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+
+    // Handle Integrated Rotation for Nebula Phase
+    if ((phase === 'nebula' || phase === 'blooming') && ringRef.current) {
+      // Rotate ring normally
+      if (!focusedId) {
+        const baseSpeed = 0.02;
+        let rotationSpeed = baseSpeed;
+        
+        if (gesture === 'open') rotationSpeed = 0.005; // Slow down
+        if (gesture === 'wave') {
+          rotationSpeed = 0.25; // Dramatic speed boost
+          // Sync rotation direction with horizontal hand movement
+          if (Math.abs(handVelocityX) > 0.005) {
+            targetDirection.current = handVelocityX > 0 ? 1 : -1;
+          }
+        }
+        
+        // Apply rotation with direction
+        ringRef.current.rotation.y += delta * rotationSpeed * targetDirection.current;
+      }
+
+      // Handle Pinch - Find closest to center (prioritizing front photos)
+      if (gesture === 'pinch') {
+        if (!focusedId) {
+          let closestId = null;
+          let minScore = Infinity;
+          
+          // Use world positions for accurate centering with scratch vectors
+          ringRef.current.traverse((child) => {
+            if (child.userData && child.userData.id) {
+              child.getWorldPosition(_v1);
+              _v1.project(state.camera);
+              
+              const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
+              // Depth is _v1.z (NDC space: 0 is near plane, 1 is far plane)
+              // Factor in depth to prioritize photos closer to the screen
+              const score = distToCenter + _v1.z * 0.5;
+              
+              if (score < minScore) {
+                minScore = score;
+                closestId = child.userData.id;
+              }
+            }
+          });
+          if (closestId) setFocusedId(closestId);
+        }
+      }
+      
+      // Clear focus if we move back to tree or if palm closed
+      if (gesture === 'fist') {
+         setFocusedId(null);
+      }
+    } else if (phase === 'tree') {
+      // Handle Pinch on Tree phase - Random photo focus
+      if (gesture === 'pinch') {
+        if (!focusedId && photos.length > 0) {
+          const randomIdx = Math.floor(Math.random() * photos.length);
+          setFocusedId(photos[randomIdx].id);
+        }
+      }
+      
+      if (ringRef.current) {
+        // Ensure ring is reset when on tree
+        ringRef.current.rotation.y = THREE.MathUtils.lerp(ringRef.current.rotation.y, 0, 0.1);
+      }
+    }
+  });
+
+  return (
+    <group>
+      {/* Little Star Top */}
+      <mesh position={[0, 5.5, 0]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshStandardMaterial color="#FFE680" emissive="#FFD700" emissiveIntensity={5} />
+        <pointLight intensity={2} color="#FFD700" />
+      </mesh>
+
+      {/* Shared Rotating Group for Nebula Phase Synchronization */}
+      <group ref={ringRef}>
+        {/* Pine Particles */}
+        <instancedMesh ref={particlesRef} args={[null, null, PARTICLE_COUNT]}>
+          <sphereGeometry args={[1, 6, 6]} />
+          <meshStandardMaterial 
+            color="#2d5a27" 
+            emissive="#2d5a27"
+            emissiveIntensity={1.0} 
+            roughness={0.5}
+            metalness={0.1}
+          />
+        </instancedMesh>
+
+        {/* Sparkling Decorations */}
+        <instancedMesh ref={sparklesRef} args={[null, null, SPARKLE_COUNT]}>
+          <sphereGeometry args={[0.09, 8, 8]} />
+          <meshStandardMaterial 
+            roughness={0.0} 
+            metalness={1.0} 
+            color="white"
+            emissive="#ffffff"
+            emissiveIntensity={0.3} 
+          />
+        </instancedMesh>
+        
+        {/* Photo Wall/Nebula */}
+        <PhotoWall />
+      </group>
+    </group>
+  );
+}
+
+
+function PhotoWall() {
+  const { photos } = useStore();
+
+  return (
+    <group>
+      {photos.map((photo, i) => (
+        <SmartPhoto key={photo.id} photo={photo} index={i} total={photos.length} />
+      ))}
+    </group>
+  );
+}
+
+function SmartPhoto({ photo, index, total }) {
+  const meshRef = useRef();
+  const { phase, gesture, focusedId, setFocusedId } = useStore();
+  const texture = useTexture(photo.url);
+  const isFocused = focusedId === photo.id;
+
+  const targetPos = useMemo(() => {
+    if (phase === 'tree') {
+      // Ordered Bottom-to-Top Hanging - Restricted to lower 85% and strictly WITHIN radius 4.5
+      const t = index / Math.max(total, 1);
+      const h = 8.5 * (1 - Math.pow(t, 0.7)); 
+      const r = ((10 - h) / 10) * 4.4 + 0.1; // Maximum radius 4.5
+      const a = t * Math.PI * 2 * 3.5; 
+      return new THREE.Vector3(Math.cos(a) * r, h - 5 - 0.5, Math.sin(a) * r);
+    } else {
+      // Hovering above the tilted nebula ring (raised to -1.5)
+      const t = index / Math.max(total, 1);
+      const r = 10 + (Math.random() - 0.5) * 2; 
+      const a = t * Math.PI * 2;
+      const tiltAngle = Math.PI * 0.03; // Match geometry.js subtler tilt
+      
+      let x = Math.cos(a) * r;
+      let z = Math.sin(a) * r;
+      let y = 1.6 + (Math.random() * 0.4) - 1.5; // Hovering 1.6 units above the raised ring (-1.5)
+      
+      const tiltedY = y * Math.cos(tiltAngle) - z * Math.sin(tiltAngle);
+      const tiltedZ = y * Math.sin(tiltAngle) + z * Math.cos(tiltAngle);
+      
+      return new THREE.Vector3(x, tiltedY, tiltedZ);
+    }
+  }, [phase, index, total]);
+
+  useFrame((state) => {
+    // Gesture-based unfocus: Restore if we're not pinching anymore
+    if (isFocused && gesture !== 'pinch') {
+       // Restore immediately if gesture changed or hand disappeared
+       setFocusedId(null);
+    }
+
+    if (isFocused && (phase === 'nebula' || phase === 'tree')) {
+      // Absolute centering logic
+      // We want it to stay in front of the camera regardless of parent group's rotation
+      const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(state.camera.quaternion);
+      const focusPos = state.camera.position.clone().add(camDir.multiplyScalar(8)); // Slightly further for better scale
+      
+      // Transform world focus position to local coordinates of the parent
+      const localFocusPos = meshRef.current.parent.worldToLocal(focusPos.clone());
+      meshRef.current.position.lerp(localFocusPos, 0.1);
+      
+      // Match camera rotation in world space
+      // Convert camera quaternion to parent's local space
+      const parentWorldQuat = new THREE.Quaternion();
+      meshRef.current.parent.getWorldQuaternion(parentWorldQuat);
+      const localTargetQuat = state.camera.quaternion.clone().multiply(parentWorldQuat.invert());
+      meshRef.current.quaternion.slerp(localTargetQuat, 0.1);
+      
+      // Scale to ~70% of screen height
+      const vFOV = (state.camera.fov * Math.PI) / 180;
+      const visibleHeight = 2 * Math.tan(vFOV / 2) * 8;
+      const targetScale = visibleHeight * 0.7;
+      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 0.1);
+      
+    } else {
+      meshRef.current.position.lerp(targetPos, 0.05);
+      const baseScale = phase === 'tree' ? 1.0 : 1.5; // Slightly moderated scale
+      meshRef.current.scale.lerp(new THREE.Vector3(baseScale, baseScale, 1), 0.05);
+
+      if (phase === 'nebula' || phase === 'tree') {
+        meshRef.current.lookAt(state.camera.position);
+      } else {
+        meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime + index) * 0.2;
+        meshRef.current.rotation.z = Math.cos(state.clock.elapsedTime * 0.5 + index) * 0.1;
+      }
+    }
+  });
+
+  return (
+    <mesh 
+      ref={meshRef} 
+      userData={{ id: photo.id }}
+      onClick={(e) => {
+        e.stopPropagation();
+        setFocusedId(isFocused ? null : photo.id);
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'auto';
+        if (isFocused) setFocusedId(null);
+      }}
+    >
+      <planeGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial map={texture} />
+      {/* Polaroid Frame */}
+      <group position={[0, -0.1, -0.01]} scale={[1.1, 1.4, 1]}>
+        <mesh>
+          <planeGeometry />
+          <meshStandardMaterial color="white" />
+        </mesh>
+        {/* Hanging String (only on tree) */}
+        {phase === 'tree' && (
+          <mesh position={[0, 0.6, -0.01]} scale={[0.02, 0.5, 1]}>
+            <planeGeometry />
+            <meshStandardMaterial color="#D4AF37" />
+          </mesh>
+        )}
+      </group>
+    </mesh>
+  );
+}
+

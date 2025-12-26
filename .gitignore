@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+*.html
+!src/index.html
+!public/index.html
+# Keep the final robust standalone file if you want to push it
+!merry_christmas_robust_final.html
+!merry_christmas_standalone.html
+!merry_christmas_final.html
+.env
+.npm
+.cache
+package-lock.json

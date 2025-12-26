@@ -1,0 +1,69 @@
+import React, { Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { 
+  OrbitControls, 
+  PerspectiveCamera, 
+  Environment, 
+  Stars, 
+  Sparkles,
+  Float
+} from '@react-three/drei';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
+import ChristmasTree from './ChristmasTree';
+import useStore from '../store';
+
+export default function Scene() {
+  const phase = useStore((state) => state.phase);
+
+  return (
+    <div className="w-full h-full bg-black">
+      <Canvas shadows dpr={[1, 2]}>
+        <color attach="background" args={['#000']} />
+        
+        <Suspense fallback={null}>
+          <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={45} />
+          <OrbitControls 
+            enablePan={false} 
+            maxDistance={40} 
+            minDistance={10}
+            autoRotate={phase === 'nebula'}
+            autoRotateSpeed={0.5}
+          />
+
+          {/* Lights */}
+          <ambientLight intensity={0.2} />
+          <pointLight position={[10, 10, 10]} color="#fff7e6" intensity={1.5} />
+          <pointLight position={[-10, 5, -5]} color="#d0e1f9" intensity={1} />
+          <spotLight
+            position={[0, 20, 0]}
+            angle={0.3}
+            penumbra={1}
+            intensity={2}
+            castShadow
+            color="#fff"
+          />
+
+          {/* Environment */}
+          <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+          <Sparkles count={200} scale={20} size={2} speed={0.4} opacity={0.5} />
+          
+          <Environment preset="city" />
+
+          {/* 3D Content */}
+          <ChristmasTree />
+
+          {/* Post Processing */}
+          <EffectComposer disableNormalPass>
+            <Bloom 
+              luminanceThreshold={0.8} 
+              mipmapBlur 
+              intensity={1.5} 
+              radius={0.4} 
+            />
+            <Vignette eskil={false} offset={0.1} darkness={1.1} />
+          </EffectComposer>
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+}
