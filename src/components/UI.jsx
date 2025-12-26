@@ -10,6 +10,7 @@ import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Share2, Upload }
 export default function UI() {
   const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture } = useStore();
   const [isSharing, setIsSharing] = React.useState(false);
+  const [hasStarted, setHasStarted] = React.useState(false);
   const audioRef = React.useRef(null);
 
   const handleMusicUpload = (e) => {
@@ -17,6 +18,13 @@ export default function UI() {
     if (file) {
       const url = URL.createObjectURL(file);
       setBgm(url, file.name.replace(/\.[^/.]+$/, "")); // Set URL and name (without extension)
+    }
+  };
+
+  const handleStart = () => {
+    setHasStarted(true);
+    if (audioRef.current && useStore.getState().isPlaying) {
+      audioRef.current.play().catch(console.error);
     }
   };
 
@@ -207,7 +215,31 @@ export default function UI() {
   };
 
   return (
-    <div className="absolute inset-x-0 inset-y-0 pointer-events-none z-40 select-none flex flex-col items-center justify-between p-4 sm:p-8">
+    <>
+      {/* Start Overlay */}
+      {!hasStarted && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-2xl transition-all duration-700">
+          <div className="text-center p-8 rounded-3xl border border-white/20 bg-white/5 shadow-2xl animate-in fade-in zoom-in duration-500">
+            <h2 className="text-5xl sm:text-7xl font-cursive text-transparent bg-clip-text bg-gradient-to-b from-vintage-gold to-yellow-200 drop-shadow-[0_0_20px_rgba(212,175,55,0.6)] mb-8">
+              Merry Christmas
+            </h2>
+            <button
+              onClick={handleStart}
+              className="group relative px-12 py-5 bg-gradient-to-r from-vintage-gold to-yellow-500 rounded-full text-black font-bold text-xl transition-all hover:scale-110 active:scale-95 shadow-[0_0_30px_rgba(212,175,55,0.4)]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-black/10 p-2 rounded-full group-hover:bg-black/20 transition-colors">
+                  <Play size={24} fill="currentColor" />
+                </div>
+                <span>Start Experience</span>
+              </div>
+            </button>
+            <p className="mt-8 text-white/40 text-xs tracking-widest uppercase">Tap to Begin the Festive Magic</p>
+          </div>
+        </div>
+      )}
+
+      <div className={`absolute inset-x-0 inset-y-0 pointer-events-none z-40 select-none flex flex-col items-center justify-between p-4 sm:p-8 transition-opacity duration-1000 ${hasStarted ? 'opacity-100' : 'opacity-0'}`}>
       {/* Header Title */}
       <div className="w-full text-center mt-4 sm:mt-12">
         <h1 className="text-4xl sm:text-6xl font-cursive text-transparent bg-clip-text bg-gradient-to-b from-vintage-gold to-yellow-200 drop-shadow-[0_0_15px_rgba(212,175,55,0.8)] px-4">
@@ -291,6 +323,7 @@ export default function UI() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
