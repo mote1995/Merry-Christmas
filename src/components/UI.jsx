@@ -169,7 +169,10 @@ export default function UI() {
       try {
         const res = await fetch('https://jsonblob.com/api/jsonBlob', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
           body: payload
         });
         if (res.ok) blobId = res.headers.get('Location').split('/').pop();
@@ -178,8 +181,7 @@ export default function UI() {
       }
 
       if (!blobId) {
-        // Fallback to myjson.online or similar if needed, or just fail to backup
-        throw new Error("Cloud save failed (Network/CORS). Use 'Export' instead.");
+        throw new Error("Temporary cloud service limit or network restriction. Please use the 'Export' button instead — it generates a standalone file that is much more reliable for sharing photos!");
       }
 
       const shareUrl = `${window.location.origin}${window.location.pathname}?id=${blobId}`;
