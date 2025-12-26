@@ -1,7 +1,7 @@
 import React from 'react';
 import useStore from '../store';
 
-import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Share2, Upload } from 'lucide-react';
+import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Share2, Upload, Snowflake } from 'lucide-react';
 
 const SERVICES = [
   { url: 'https://jsonblob.com/api/jsonBlob', method: 'POST' },
@@ -9,7 +9,7 @@ const SERVICES = [
 ];
 
 export default function UI() {
-  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted } = useStore();
+  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera } = useStore();
   const [isSharing, setIsSharing] = React.useState(false);
   const audioRef = React.useRef(null);
 
@@ -280,19 +280,27 @@ export default function UI() {
       <div className="w-full max-w-md pointer-events-auto mb-4 sm:absolute sm:bottom-8 sm:right-8 sm:w-auto sm:mb-0">
         <audio ref={audioRef} src={bgmUrl} loop />
         
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-3 sm:p-4 rounded-3xl flex flex-col sm:flex-row items-center gap-2 sm:gap-4 shadow-2xl">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-3 sm:p-4 rounded-3xl flex flex-col sm:flex-row items-center gap-2 sm:gap-4 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_50px_rgba(212,175,55,0.3)] transition-all duration-1000 animate-pulse-slow">
           <div className="flex items-center gap-4 w-full sm:w-auto">
             <div className="relative shrink-0">
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-tr from-vintage-gold to-yellow-200 rounded-full flex items-center justify-center ${isPlaying ? 'animate-[spin_8s_linear_infinite]' : ''}`}>
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-full flex items-center justify-center">
-                  <Music size={14} className="text-vintage-gold" />
+               {/* Rotating Snowflake Icon */}
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-tr from-cyan-100 to-blue-200 rounded-full flex items-center justify-center ${isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black/80 rounded-full flex items-center justify-center overflow-hidden">
+                  <Snowflake size={16} className="text-cyan-200" />
                 </div>
               </div>
             </div>
-            <div className="flex flex-col min-w-0 flex-1">
+            
+            <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
               <span className="text-[9px] text-vintage-gold font-bold tracking-[0.2em] uppercase">Now Playing</span>
-              <span className="text-xs sm:text-sm font-semibold truncate max-w-[150px] sm:w-40">{bgmName}</span>
+              {/* Marquee Effect */}
+              <div className="relative w-32 sm:w-40 h-5 overflow-hidden">
+                 <div className="absolute whitespace-nowrap animate-marquee text-xs sm:text-sm font-semibold text-white">
+                   {bgmName} &nbsp;&bull;&nbsp; {bgmName} &nbsp;&bull;&nbsp;
+                 </div>
+              </div>
             </div>
+            
             <button 
               onClick={togglePlay}
               className="p-2 hover:bg-white/10 rounded-full transition-colors group shrink-0"
@@ -337,6 +345,16 @@ export default function UI() {
                 </div>
                 <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">Import</span>
               </button>
+              
+            <button 
+              onClick={toggleCamera}
+              className={`flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl transition-colors group ${isCameraOpen ? 'bg-white/10' : ''}`}
+            >
+              <div className={`p-1.5 rounded-full transition-colors ${isCameraOpen ? 'bg-red-500/20' : 'bg-white/5 group-hover:bg-vintage-gold/20'}`}>
+                <Camera size={14} className={isCameraOpen ? "text-red-400" : "text-vintage-gold"} />
+              </div>
+              <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">{isCameraOpen ? 'Close' : 'Camera'}</span>
+            </button>
           </div>
         </div>
       </div>

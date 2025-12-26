@@ -2,16 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  padding: 0;
-  background: black;
-  color: white;
-  font-family: 'Inter', sans-serif;
-  overflow: hidden;
-  user-select: none;
+@layer utilities {
+  .font-cursive {
+    font-family: 'Great Vibes', cursive;
+  }
 }
 
-canvas {
-  touch-action: none;
+@layer base {
+  body {
+    @apply bg-black overflow-hidden select-none text-white font-sans;
+  }
+  canvas {
+    touch-action: none;
+  }
+}
+
+/* Custom Animations */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 10s linear infinite;
+  padding-right: 2rem; /* Spacing for seamless loop */
+}
+
+@keyframes pulse-slow {
+  0%, 100% { box-shadow: 0 0 30px rgba(255, 255, 255, 0.1); }
+  50% { box-shadow: 0 0 50px rgba(212, 175, 55, 0.3); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
 }

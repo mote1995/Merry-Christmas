@@ -198,12 +198,6 @@ export default function HandTracker() {
           <span className="text-[7px] text-white/50">{status}</span>
         </div>
       </div>
-      <button 
-        onClick={toggleCamera}
-        className="mt-2 w-full px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-xs font-semibold hover:bg-white/20 transition-all"
-      >
-        {isCameraOpen ? 'CLOSE CAMERA' : 'OPEN CAMERA'}
-      </button>
     </div>
   );
 }
