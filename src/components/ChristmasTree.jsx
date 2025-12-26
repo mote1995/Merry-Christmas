@@ -114,7 +114,7 @@ export default function ChristmasTree() {
       });
     }
   }, [phase]);
-
+  const lastGesture = useRef('none');
   const rotationVelocity = useRef(0);
   const isDragging = useRef(false);
   const lastMouseX = useRef(0);
@@ -276,6 +276,8 @@ export default function ChristmasTree() {
             child.getWorldPosition(_v1);
             _v1.project(state.camera);
             
+            // Score based on distance to screen center (x,y) and depth (z)
+            // Screenspace x,y are in range [-1, 1]
             const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
             const score = distToCenter + _v1.z * 0.5;
             
@@ -287,20 +289,23 @@ export default function ChristmasTree() {
         });
         if (closestId) setFocusedId(closestId);
       }
+    } else if (lastGesture.current === 'pinch' && focusedId) {
+      // Automatic restore once pinch is released
+      setFocusedId(null);
     }
     
-    // Clear focus if we move back to tree or if palm closed
+    // Handle Pinch on Tree phase - Random photo focus if none focused
+    if (phase === 'tree' && gesture === 'pinch' && !focusedId && photos.length > 0) {
+      const randomIdx = Math.floor(Math.random() * photos.length);
+      setFocusedId(photos[randomIdx].id);
+    }
+
+    // Clear focus if fist detected (manual reset)
     if (gesture === 'fist') {
        setFocusedId(null);
     }
 
-    // Handle Pinch on Tree phase - Random photo focus
-    if (phase === 'tree' && gesture === 'pinch') {
-      if (!focusedId && photos.length > 0) {
-        const randomIdx = Math.floor(Math.random() * photos.length);
-        setFocusedId(photos[randomIdx].id);
-      }
-    }
+    lastGesture.current = gesture;
   });
 
   return (
@@ -393,38 +398,32 @@ function SmartPhoto({ photo, index, total }) {
   }, [phase, index, total]);
 
   useFrame((state) => {
-    // Gesture-based unfocus: Restore if we're not pinching anymore
-    if (isFocused && gesture !== 'pinch') {
-       // Restore immediately if gesture changed or hand disappeared
-       setFocusedId(null);
-    }
-
-    if (isFocused && (phase === 'blooming' || phase === 'tree')) {
-      // Absolute centering logic
-      // We want it to stay in front of the camera regardless of parent group's rotation
-      const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(state.camera.quaternion);
-      const focusPos = state.camera.position.clone().add(camDir.multiplyScalar(8)); // Slightly further for better scale
+    if (isFocused) {
+      // MAGNETIC FOCUS MODE: Moves to absolute center of screen
+      // Calculate a point directly in front of camera
+      const dist = 6; // Fixed distance for consistent scale
+      _v1.set(0, 0, -dist).applyQuaternion(state.camera.quaternion).add(state.camera.position);
       
-      // Transform world focus position to local coordinates of the parent
-      const localFocusPos = meshRef.current.parent.worldToLocal(focusPos.clone());
-      meshRef.current.position.lerp(localFocusPos, 0.1);
+      // Convert world target to local parent coordinates
+      const targetLocal = meshRef.current.parent.worldToLocal(_v1.clone());
+      meshRef.current.position.lerp(targetLocal, 0.15); // Snappy magnet effect
       
-      // Match camera rotation in world space
-      // Convert camera quaternion to parent's local space
+      // Positive View Lock: lookAt camera with world-up orientation
+      // Convert camera orientation to parent local space
       const parentWorldQuat = new THREE.Quaternion();
       meshRef.current.parent.getWorldQuaternion(parentWorldQuat);
-      const localTargetQuat = state.camera.quaternion.clone().multiply(parentWorldQuat.invert());
-      meshRef.current.quaternion.slerp(localTargetQuat, 0.1);
+      const localFaceQuat = state.camera.quaternion.clone().multiply(parentWorldQuat.invert());
+      meshRef.current.quaternion.slerp(localFaceQuat, 0.15);
       
-      // Scale to ~70% of screen height
+      // Scale: Target ~70% screen height
       const vFOV = (state.camera.fov * Math.PI) / 180;
-      const visibleHeight = 2 * Math.tan(vFOV / 2) * 8;
+      const visibleHeight = 2 * Math.tan(vFOV / 2) * dist;
       const targetScale = visibleHeight * 0.7;
-      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 0.1);
+      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 0.15);
       
     } else {
       meshRef.current.position.lerp(targetPos, 0.05);
-      const baseScale = phase === 'tree' ? 1.0 : 1.5; // Slightly moderated scale
+      const baseScale = phase === 'tree' ? 1.0 : 1.5; 
       meshRef.current.scale.lerp(new THREE.Vector3(baseScale, baseScale, 1), 0.05);
 
       if (phase === 'blooming' || phase === 'tree') {
