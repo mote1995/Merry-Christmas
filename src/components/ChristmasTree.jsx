@@ -299,23 +299,18 @@ export default function ChristmasTree() {
         let closestId = null;
         let minScore = Infinity;
         
-        if (photoGroupRef.current) {
-          let foundCount = 0;
-          photoGroupRef.current.traverse((child) => {
-            if (child.isMesh && child.userData && child.userData.id) {
-              foundCount++;
+        // Broaden search to entire ringRef to ensure we hit photos even if nested deep
+        if (ringRef.current) {
+          ringRef.current.traverse((child) => {
+            if (child.userData && child.userData.id) {
               child.getWorldPosition(_v1);
               _v1.project(state.camera);
               
-              // Use screen-space distance (X, Y) primarily
-              // Z in NDC: -1 is near, 1 is far.
               const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
               
-              // Only consider photos that are roughly in the front-hemisphere (z < 0.8)
-              // This prevents selecting photos that are far behind the tree
-              if (_v1.z < 0.8) {
-                const score = distToCenter + (_v1.z + 1) * 0.1;
-                
+              // Only consider things roughly in front (depth < 0.9ndc)
+              if (_v1.z < 0.9) {
+                const score = distToCenter + (_v1.z + 1) * 0.05;
                 if (score < minScore) {
                   minScore = score;
                   closestId = child.userData.id;
@@ -323,10 +318,6 @@ export default function ChristmasTree() {
               }
             }
           });
-          
-          if (gesture === 'point_up' && !focusedId && foundCount === 0) {
-             console.warn("Point-Up active but NO photos found in photoGroupRef!");
-          }
         }
         
         if (closestId) {
