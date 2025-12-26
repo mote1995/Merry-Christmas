@@ -310,14 +310,6 @@ export default function UI() {
 
           <div className="flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t border-white/10 sm:border-t-0 justify-center">
             <label className="flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl cursor-pointer transition-colors group">
-              <input type="file" className="hidden" onChange={handleMusicUpload} accept="audio/*" />
-              <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
-                <Upload size={14} className="text-vintage-gold" />
-              </div>
-              <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">Music</span>
-            </label>
-            
-            <label className="flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl cursor-pointer transition-colors group">
               <input type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" multiple />
               <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
                 <ImageIcon size={14} className="text-vintage-gold" />
