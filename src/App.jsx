@@ -4,6 +4,8 @@ import HandTracker from './components/HandTracker';
 import UI from './components/UI';
 import useStore from './store';
 
+import ErrorBoundary from './components/ErrorBoundary';
+
 export default function App() {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -21,9 +23,11 @@ export default function App() {
 
   return (
     <div className="w-full h-screen bg-black">
-      <Scene />
-      <HandTracker />
-      <UI />
+      <ErrorBoundary>
+        <Scene />
+        <HandTracker />
+        <UI />
+      </ErrorBoundary>
     </div>
   );
 }
