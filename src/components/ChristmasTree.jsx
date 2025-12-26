@@ -49,69 +49,25 @@ export default function ChristmasTree() {
     // Phase logic based on gesture
     if (phase === 'tree' && gesture === 'open') {
       setPhase('blooming');
-    } else if (gesture === 'fist') {
-      // Global reset: any active phase -> collapse back to tree
-      if (phase === 'blooming' || phase === 'nebula') {
-         setPhase('collapsing');
-      }
+    } else if (gesture === 'fist' && phase === 'blooming') {
+      setPhase('tree');
     }
   }, [gesture, phase]);
 
+  const transitionProgress = useRef({ pos: 0 });
   const starRef = useRef();
 
   // Transition handling with GSAP
   useEffect(() => {
+    const tl = gsap.timeline();
+    
     if (phase === 'blooming') {
-      const tl = gsap.timeline({
-        onComplete: () => setPhase('nebula')
-      });
-      
-      // Animate star to center of ring
-      if (starRef.current) {
-        tl.to(starRef.current.position, {
-          x: 0,
-          y: -1.5,
-          z: 0,
-          duration: 2.2,
-          ease: 'expo.out'
-        }, 0);
-        tl.to(starRef.current.scale, {
-          x: 2,
-          y: 2,
-          z: 2,
-          duration: 2,
-          ease: 'expo.out'
-        }, 0);
-      }
-
-      // Animate particles to nebula
-      positions.forEach((pos, i) => {
-        tl.to(pos, {
-          x: nebulaPoints[i].x,
-          y: nebulaPoints[i].y,
-          z: nebulaPoints[i].z,
-          duration: 2,
-          ease: 'expo.out'
-        }, 0);
-      });
-
-      // Efficient color transition for all particles
-      const colorProgress = { t: 0 };
-      tl.to(colorProgress, {
-        t: 1,
-        duration: 1.5,
-        onUpdate: () => {
-          if (!particlesRef.current) return;
-          const tempColor = new THREE.Color();
-          const startCol = new THREE.Color('#2d5a27');
-          for (let i = 0; i < PARTICLE_COUNT; i++) {
-            const targetCol = new THREE.Color(i % 2 === 0 ? '#D4AF37' : '#00ffcc');
-            tempColor.copy(startCol).lerp(targetCol, colorProgress.t);
-            particlesRef.current.setColorAt(i, tempColor);
-          }
-          particlesRef.current.instanceColor.needsUpdate = true;
-        }
-      }, 0.5);
+      // High-performance progress animation
+      tl.to(transitionProgress.current, {
+        pos: 1,
+        duration: 2,
+        ease: 'expo.out'
+      }, 0);
 
       // Animate ornaments to nebula outer ring
       ornamentPositions.forEach((pos, i) => {
@@ -122,58 +78,15 @@ export default function ChristmasTree() {
           z: target.z,
           duration: 2.2,
           ease: 'expo.out'
-        }, 0);
+        }, 0.1);
       });
-    } else if (phase === 'collapsing') {
-      const tl = gsap.timeline({
-        onComplete: () => setPhase('tree')
-      });
-
-      // Animate star back to top
-      if (starRef.current) {
-        tl.to(starRef.current.position, {
-          x: 0,
-          y: 5.5,
-          z: 0,
-          duration: 1.5,
-          ease: 'power3.inOut'
-        }, 0);
-        tl.to(starRef.current.scale, {
-          x: 1,
-          y: 1,
-          z: 1,
-          duration: 1.5,
-          ease: 'power3.inOut'
-        }, 0);
-      }
-
-      positions.forEach((pos, i) => {
-        tl.to(pos, {
-          x: treePoints[i].x,
-          y: treePoints[i].y,
-          z: treePoints[i].z,
-          duration: 1.5,
-          ease: 'power3.inOut'
-        }, 0);
-      });
-
-      // Efficient color transition back to green
-      const colorProgress = { t: 0 };
-      tl.to(colorProgress, {
-        t: 1,
-        duration: 1.2,
-        onUpdate: () => {
-          if (!particlesRef.current) return;
-          const tempColor = new THREE.Color();
-          const targetCol = new THREE.Color('#2d5a27');
-          for (let i = 0; i < PARTICLE_COUNT; i++) {
-            const startCol = new THREE.Color(i % 2 === 0 ? '#D4AF37' : '#00ffcc');
-            tempColor.copy(startCol).lerp(targetCol, colorProgress.t);
-            particlesRef.current.setColorAt(i, tempColor);
-          }
-          particlesRef.current.instanceColor.needsUpdate = true;
-        }
-      }, 0.2);
+    } else if (phase === 'tree') {
+      // Reset progress
+      tl.to(transitionProgress.current, {
+        pos: 0,
+        duration: 1.5,
+        ease: 'power3.inOut'
+      }, 0);
 
       ornamentPositions.forEach((pos, i) => {
         tl.to(pos, {
@@ -250,13 +163,18 @@ export default function ChristmasTree() {
       // Cap max velocity
       rotationVelocity.current = THREE.MathUtils.clamp(rotationVelocity.current, -10, 10);
     }
-
     // Update Particles
     if (particlesRef.current) {
       const mesh = particlesRef.current;
       const dummy = new THREE.Object3D();
 
       positions.forEach((pos, i) => {
+        // Interpolate position based on progress
+        const treePos = treePoints[i];
+        const nebulaPos = nebulaPoints[i];
+        _v1.copy(treePos).lerp(nebulaPos, transitionProgress.current.pos);
+        pos.copy(_v1);
+
         // Ripple effect logic (if phase is tree)
         if (phase === 'tree') {
           const dist = pos.distanceTo(mousePos);
@@ -265,20 +183,11 @@ export default function ChristmasTree() {
             const dir = pos.clone().sub(mousePos).normalize();
             pos.add(dir.multiplyScalar(force * 0.2));
           }
-          // Slow return to origin
-          const origin = treePoints[i];
-          pos.lerp(origin, 0.05);
         }
 
-        // Nebula particles look different
-        const isNebula = phase === 'nebula' || phase === 'blooming';
-        
-        // Color transition logic (internal instancedMesh color management might be complex, 
-        // using scale and position for visual distinction first)
-        const scale = isNebula ? (0.1 + Math.sin(clock.elapsedTime * 2 + i) * 0.05) : 0.05;
-
-        dummy.position.copy(pos);
-        dummy.scale.setScalar(scale);
+        // Consistent scale for all phases
+        const twinkle = Math.sin(clock.elapsedTime * 3 + i) * 0.2 + 0.8;
+        dummy.scale.setScalar(0.05 * twinkle);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
       });
@@ -306,7 +215,7 @@ export default function ChristmasTree() {
         
         // Intensified sparkling effect: Random flickering (reduced frequency)
         const flicker = clock.elapsedTime * 5 + i * 100;
-        const scale = (phase === 'nebula' || phase === 'blooming') ? 1.5 : 1.0;
+        const scale = phase === 'blooming' ? 1.5 : 1.0;
         dummy.scale.setScalar((0.7 + Math.sin(flicker) * 0.6) * scale);
         
         dummy.updateMatrix();
@@ -317,10 +226,9 @@ export default function ChristmasTree() {
 
     // Apply rotation to the main group
     if (ringRef.current) {
-      if ((phase === 'nebula' || phase === 'blooming') && !focusedId) {
-        // Small base rotation + inertial velocity
-        const baseRotation = phase === 'nebula' ? 0.3 : 0;
-        ringRef.current.rotation.y += (baseRotation + rotationVelocity.current) * delta;
+      if (phase === 'blooming' && !focusedId) {
+        // Inertial velocity
+        ringRef.current.rotation.y += rotationVelocity.current * delta;
       } else if (phase === 'tree') {
         // Ensure ring is reset when on tree
         ringRef.current.rotation.y = THREE.MathUtils.lerp(ringRef.current.rotation.y, 0, 0.1);
@@ -460,7 +368,7 @@ function SmartPhoto({ photo, index, total }) {
        setFocusedId(null);
     }
 
-    if (isFocused && (phase === 'nebula' || phase === 'tree')) {
+    if (isFocused && (phase === 'blooming' || phase === 'tree')) {
       // Absolute centering logic
       // We want it to stay in front of the camera regardless of parent group's rotation
       const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(state.camera.quaternion);
@@ -488,7 +396,7 @@ function SmartPhoto({ photo, index, total }) {
       const baseScale = phase === 'tree' ? 1.0 : 1.5; // Slightly moderated scale
       meshRef.current.scale.lerp(new THREE.Vector3(baseScale, baseScale, 1), 0.05);
 
-      if (phase === 'nebula' || phase === 'tree') {
+      if (phase === 'blooming' || phase === 'tree') {
         meshRef.current.lookAt(state.camera.position);
       } else {
         meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime + index) * 0.2;

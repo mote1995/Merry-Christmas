@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 const useStore = create((set) => ({
-  // Phase: 'tree' | 'blooming' | 'nebula' | 'collapsing'
+  // Phase: 'tree' | 'blooming'
   phase: 'tree',
   setPhase: (phase) => set({ phase }),
 
