@@ -23,7 +23,19 @@ export default function UI() {
   React.useEffect(() => {
     if (audioRef.current) {
       if (isPlaying) {
-        audioRef.current.play().catch(e => console.log("Audio play blocked:", e));
+        audioRef.current.play().catch(e => {
+          console.log("Autoplay blocked, waiting for interaction...");
+          // Handle autoplay block by adding a one-time interaction listener
+          const startAudio = () => {
+            if (useStore.getState().isPlaying) {
+              audioRef.current.play().catch(console.error);
+            }
+            window.removeEventListener('click', startAudio);
+            window.removeEventListener('touchstart', startAudio);
+          };
+          window.addEventListener('click', startAudio);
+          window.addEventListener('touchstart', startAudio);
+        });
       } else {
         audioRef.current.pause();
       }

@@ -110,9 +110,69 @@ export default function ChristmasTree() {
     }
   }, [phase]);
 
+  const rotationVelocity = useRef(0);
+  const isDragging = useRef(false);
+  const lastMouseX = useRef(0);
+  const lastMoveTime = useRef(0);
+
+  // Drag and flick logic for mouse
+  useEffect(() => {
+    const handleDown = (e) => {
+      isDragging.current = true;
+      lastMouseX.current = e.clientX || (e.touches && e.touches[0].clientX);
+      lastMoveTime.current = performance.now();
+    };
+    const handleMove = (e) => {
+      if (!isDragging.current) return;
+      const x = e.clientX || (e.touches && e.touches[0].clientX);
+      const now = performance.now();
+      const dt = now - lastMoveTime.current;
+      if (dt > 10) {
+        const dx = x - lastMouseX.current;
+        // Apply direct rotation while dragging
+        if (ringRef.current) ringRef.current.rotation.y += dx * 0.005;
+        // Calculate velocity for flick
+        rotationVelocity.current = dx / dt * 5.0; // Scaled velocity
+        lastMouseX.current = x;
+        lastMoveTime.current = now;
+      }
+    };
+    const handleUp = () => {
+      isDragging.current = false;
+    };
+
+    window.addEventListener('mousedown', handleDown);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchstart', handleDown);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', handleUp);
+    return () => {
+      window.removeEventListener('mousedown', handleDown);
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchstart', handleDown);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleUp);
+    };
+  }, [phase]);
+
   useFrame((state, delta) => {
     const { mouse } = state;
     const mousePos = new THREE.Vector3(mouse.x * 10, mouse.y * 10, 0);
+
+    // Apply Friction / Decay
+    if (!isDragging.current && gesture !== 'wave') {
+      rotationVelocity.current *= 0.96; // Slow down gradually
+    }
+
+    // Hand Wave Input
+    if (gesture === 'wave') {
+      const power = Math.abs(handVelocityX) > 0.005 ? handVelocityX * 15.0 : 0;
+      rotationVelocity.current += power;
+      // Cap max velocity
+      rotationVelocity.current = THREE.MathUtils.clamp(rotationVelocity.current, -10, 10);
+    }
 
     // Update Particles
     if (particlesRef.current) {
@@ -180,69 +240,53 @@ export default function ChristmasTree() {
       mesh.instanceMatrix.needsUpdate = true;
     }
 
-    // Handle Integrated Rotation for Nebula Phase
-    if ((phase === 'nebula' || phase === 'blooming') && ringRef.current) {
-      // Rotate ring normally
-      if (!focusedId) {
-        const baseSpeed = 0.02;
-        let rotationSpeed = baseSpeed;
-        
-        if (gesture === 'open') rotationSpeed = 0.005; // Slow down
-        if (gesture === 'wave') {
-          rotationSpeed = 0.25; // Dramatic speed boost
-          // Sync rotation direction with horizontal hand movement
-          if (Math.abs(handVelocityX) > 0.005) {
-            targetDirection.current = handVelocityX > 0 ? 1 : -1;
-          }
-        }
-        
-        // Apply rotation with direction
-        ringRef.current.rotation.y += delta * rotationSpeed * targetDirection.current;
-      }
-
-      // Handle Pinch - Find closest to center (prioritizing front photos)
-      if (gesture === 'pinch') {
-        if (!focusedId) {
-          let closestId = null;
-          let minScore = Infinity;
-          
-          // Use world positions for accurate centering with scratch vectors
-          ringRef.current.traverse((child) => {
-            if (child.userData && child.userData.id) {
-              child.getWorldPosition(_v1);
-              _v1.project(state.camera);
-              
-              const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
-              // Depth is _v1.z (NDC space: 0 is near plane, 1 is far plane)
-              // Factor in depth to prioritize photos closer to the screen
-              const score = distToCenter + _v1.z * 0.5;
-              
-              if (score < minScore) {
-                minScore = score;
-                closestId = child.userData.id;
-              }
-            }
-          });
-          if (closestId) setFocusedId(closestId);
-        }
-      }
-      
-      // Clear focus if we move back to tree or if palm closed
-      if (gesture === 'fist') {
-         setFocusedId(null);
-      }
-    } else if (phase === 'tree') {
-      // Handle Pinch on Tree phase - Random photo focus
-      if (gesture === 'pinch') {
-        if (!focusedId && photos.length > 0) {
-          const randomIdx = Math.floor(Math.random() * photos.length);
-          setFocusedId(photos[randomIdx].id);
-        }
-      }
-      
-      if (ringRef.current) {
+    // Apply rotation to the main group
+    if (ringRef.current) {
+      if ((phase === 'nebula' || phase === 'blooming') && !focusedId) {
+        // Small base rotation + inertial velocity
+        const baseRotation = phase === 'nebula' ? 0.3 : 0;
+        ringRef.current.rotation.y += (baseRotation + rotationVelocity.current) * delta;
+      } else if (phase === 'tree') {
         // Ensure ring is reset when on tree
         ringRef.current.rotation.y = THREE.MathUtils.lerp(ringRef.current.rotation.y, 0, 0.1);
+      }
+    }
+
+    // Handle Pinch - Find closest to center (prioritizing front photos)
+    if (gesture === 'pinch') {
+      if (!focusedId) {
+        let closestId = null;
+        let minScore = Infinity;
+        
+        // Use world positions for accurate centering
+        ringRef.current.traverse((child) => {
+          if (child.userData && child.userData.id) {
+            child.getWorldPosition(_v1);
+            _v1.project(state.camera);
+            
+            const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
+            const score = distToCenter + _v1.z * 0.5;
+            
+            if (score < minScore) {
+              minScore = score;
+              closestId = child.userData.id;
+            }
+          }
+        });
+        if (closestId) setFocusedId(closestId);
+      }
+    }
+    
+    // Clear focus if we move back to tree or if palm closed
+    if (gesture === 'fist') {
+       setFocusedId(null);
+    }
+
+    // Handle Pinch on Tree phase - Random photo focus
+    if (phase === 'tree' && gesture === 'pinch') {
+      if (!focusedId && photos.length > 0) {
+        const randomIdx = Math.floor(Math.random() * photos.length);
+        setFocusedId(photos[randomIdx].id);
       }
     }
   });

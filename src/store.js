@@ -35,7 +35,7 @@ const useStore = create((set) => ({
   // Music state
   bgmUrl: 'audio/default_bgm.mp3',
   bgmName: 'Christmas List - Anson Seabra', // Default
-  isPlaying: false,
+  isPlaying: true,
   setBgm: (url, name) => set({ bgmUrl: url, bgmName: name, isPlaying: true }),
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
 
