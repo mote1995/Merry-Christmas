@@ -32,6 +32,7 @@ export default function ChristmasTree() {
   const particlesRef = useRef();
   const sparklesRef = useRef();
   const ringRef = useRef();
+  const photoGroupRef = useRef();
   const targetDirection = useRef(1); // 1 or -1
   
   // Base geometry points
@@ -45,23 +46,54 @@ export default function ChristmasTree() {
   
   const ornamentPositions = useMemo(() => spiralPoints.map(p => p.clone()), [spiralPoints]);
 
+  const isTransitioning = useRef(false);
+
   useEffect(() => {
     // Phase logic based on gesture
-    if (phase === 'tree' && gesture === 'open') {
+    if (phase === 'tree' && gesture === 'open' && !isTransitioning.current) {
       setPhase('blooming');
-    } else if (gesture === 'fist' && phase === 'blooming') {
-      setPhase('tree');
+    } else if (gesture === 'fist' && phase === 'blooming' && !isTransitioning.current) {
+      // Trigger collapse animation
+      isTransitioning.current = true;
+      const tl = gsap.timeline({
+        onComplete: () => {
+          setPhase('tree');
+          isTransitioning.current = false;
+        }
+      });
+
+      // Smoothly collapse all particles and photos
+      tl.to(transitionProgress.current, {
+        pos: 0,
+        duration: 1.5,
+        ease: 'power3.inOut'
+      }, 0);
+
+      ornamentPositions.forEach((pos, i) => {
+        tl.to(pos, {
+          x: spiralPoints[i].x,
+          y: spiralPoints[i].y,
+          z: spiralPoints[i].z,
+          duration: 1.7,
+          ease: 'power3.inOut'
+        }, 0);
+      });
     }
   }, [gesture, phase]);
 
   const transitionProgress = useRef({ pos: 0 });
   const starRef = useRef();
 
-  // Transition handling with GSAP
+  // Transition handling with GSAP (Blooming only)
   useEffect(() => {
-    const tl = gsap.timeline();
-    
     if (phase === 'blooming') {
+      isTransitioning.current = true;
+      const tl = gsap.timeline({
+        onComplete: () => {
+          isTransitioning.current = false;
+        }
+      });
+      
       // High-performance progress animation
       tl.to(transitionProgress.current, {
         pos: 1,
@@ -79,23 +111,6 @@ export default function ChristmasTree() {
           duration: 2.2,
           ease: 'expo.out'
         }, 0.1);
-      });
-    } else if (phase === 'tree') {
-      // Reset progress
-      tl.to(transitionProgress.current, {
-        pos: 0,
-        duration: 1.5,
-        ease: 'power3.inOut'
-      }, 0);
-
-      ornamentPositions.forEach((pos, i) => {
-        tl.to(pos, {
-          x: spiralPoints[i].x,
-          y: spiralPoints[i].y,
-          z: spiralPoints[i].z,
-          duration: 1.7,
-          ease: 'power3.inOut'
-        }, 0);
       });
     }
   }, [phase]);
@@ -185,6 +200,7 @@ export default function ChristmasTree() {
           }
         }
 
+        dummy.position.copy(pos);
         // Consistent scale for all phases
         const twinkle = Math.sin(clock.elapsedTime * 3 + i) * 0.2 + 0.8;
         dummy.scale.setScalar(0.05 * twinkle);
@@ -232,15 +248,19 @@ export default function ChristmasTree() {
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
 
-    // Apply rotation to the main group
-    if (ringRef.current) {
+    // Apply rotation separately
+    if (ringRef.current && photoGroupRef.current) {
       if (phase === 'blooming' && !focusedId) {
-        // Very slow base rotation (0.1) + inertial velocity
+        // Constant slow rotation for everything
         const baseRotation = 0.1;
-        ringRef.current.rotation.y += (baseRotation + rotationVelocity.current) * delta;
+        ringRef.current.rotation.y += baseRotation * delta;
+        photoGroupRef.current.rotation.y += baseRotation * delta;
+
+        // Wave only affects photos
+        photoGroupRef.current.rotation.y += rotationVelocity.current * delta;
       } else if (phase === 'tree') {
-        // Ensure ring is reset when on tree
         ringRef.current.rotation.y = THREE.MathUtils.lerp(ringRef.current.rotation.y, 0, 0.1);
+        photoGroupRef.current.rotation.y = THREE.MathUtils.lerp(photoGroupRef.current.rotation.y, 0, 0.1);
       }
     }
 
@@ -318,8 +338,10 @@ export default function ChristmasTree() {
           />
         </instancedMesh>
         
-        {/* Photo Wall/Nebula */}
-        <PhotoWall />
+        {/* Photo Wall/Nebula - In its own group for independent rotation */}
+        <group ref={photoGroupRef}>
+          <PhotoWall />
+        </group>
       </group>
     </group>
   );

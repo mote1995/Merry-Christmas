@@ -262,7 +262,7 @@ export default function UI() {
           <span className="text-[10px] sm:text-xs font-medium tracking-widest uppercase">Gesture: {gesture}</span>
         </div>
         <div className="text-[9px] sm:text-[10px] opacity-50 uppercase tracking-tighter">
-          Phase: {phase} | Sync: 04:10:00
+          Phase: {phase} | Sync: 04:28:00
         </div>
         {/* Hidden on very small screens or made smaller */}
         <div className="hidden sm:block mt-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-xs max-w-[220px]">
@@ -277,7 +277,7 @@ export default function UI() {
       </div>
 
       {/* Control Panel - Positioned Under Camera (Stacked Top-Right) */}
-      <div className="w-full max-w-md pointer-events-auto mb-4 sm:absolute sm:top-[152px] sm:right-12 sm:w-auto sm:mb-0">
+      <div className="w-full max-w-md pointer-events-auto mb-4 sm:absolute sm:top-[180px] sm:right-12 sm:w-auto sm:mb-0">
         <audio ref={audioRef} src={bgmUrl} loop />
         
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-3 sm:p-4 rounded-3xl flex flex-col sm:flex-row items-center gap-2 sm:gap-4 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_50px_rgba(212,175,55,0.3)] transition-all duration-1000 animate-pulse-slow">
