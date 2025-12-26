@@ -1,11 +1,12 @@
 import React from 'react';
 import useStore from '../store';
 
+import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Share2, Upload } from 'lucide-react';
+
 const SERVICES = [
   { url: 'https://jsonblob.com/api/jsonBlob', method: 'POST' },
   { url: 'https://api.myjson.online/v1/records', method: 'POST' } // Fallback
 ];
-import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Share2, Upload } from 'lucide-react';
 
 export default function UI() {
   const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted } = useStore();
