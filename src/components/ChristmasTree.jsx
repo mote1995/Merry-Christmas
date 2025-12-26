@@ -292,9 +292,9 @@ export default function ChristmasTree() {
       }
     }
 
-    // Handle Grab (Replaces Pinch) - Find closest to center (ONLY front side)
-    const isGrabTriggered = gesture === 'grab' || gesture === 'pinch'; // Compatibility
-    if (isGrabTriggered) {
+    // Handle Point Up (Replaces Grab/Pinch) - Find closest to center (ONLY front side)
+    const isPointUp = gesture === 'point_up';
+    if (isPointUp) {
       if (!focusedId) {
         let closestId = null;
         let minScore = Infinity;
@@ -306,9 +306,8 @@ export default function ChristmasTree() {
             _v1.project(state.camera);
             
             // IGNORE BACK SIDE: Normalized Z in NDC is depth. 
-            // In Three.js projection, z is depth in range [0, 1] relative to camera (0=near, 1=far)? 
-            // Actually _v1.project returns NDC [-1, 1].
-            // We only want the front half (z < 0). 
+            // In Three.js projection, z is depth in range [-1, 1].
+            // We only want the front half (z < 0.4). 
             if (_v1.z > 0.4) return; 
 
             // Score based on distance to screen center (x,y) and HEAVY depth penalty
@@ -324,13 +323,13 @@ export default function ChristmasTree() {
         });
         if (closestId) setFocusedId(closestId);
       }
-    } else if (lastGesture.current === 'grab' || lastGesture.current === 'pinch') {
+    } else if (lastGesture.current === 'point_up' || lastGesture.current === 'grab' || lastGesture.current === 'pinch') {
       // Automatic restore once released
       if (focusedId) setFocusedId(null);
     }
     
-    // Handle Grab on Tree phase - Random photo focus if none focused
-    if (phase === 'tree' && isGrabTriggered && !focusedId && photos.length > 0) {
+    // Handle Point Up on Tree phase - Random photo focus if none focused
+    if (phase === 'tree' && isPointUp && !focusedId && photos.length > 0) {
       const randomIdx = Math.floor(Math.random() * photos.length);
       setFocusedId(photos[randomIdx].id);
     }

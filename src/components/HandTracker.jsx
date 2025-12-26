@@ -216,7 +216,10 @@ export default function HandTracker() {
     if (xRange > 0.08 && extendedFingers >= 3) rawDetected = 'wave';
     else if (extendedFingers >= 3) rawDetected = 'open';
     else if (extendedFingers === 0) rawDetected = 'fist';
-    else if (grabDist < 0.6) rawDetected = 'grab';
+    else if (extendedFingers === 1 && dist(landmarks[8], wrist) > dist(landmarks[6], wrist) * 1.1) {
+      // Only index finger extended significantly
+      rawDetected = 'point_up';
+    }
 
     // Stability Buffer: Require 5 frames of consistency
     gestureBuffer.current.push(rawDetected);
@@ -230,8 +233,8 @@ export default function HandTracker() {
       setGesture(rawDetected);
       setDebugGesture(`${rawDetected} (${extendedFingers})`);
     } else if (isKeyboardGrab) {
-      setGesture('grab');
-      setDebugGesture('grab (KEYBOARD)');
+      setGesture('point_up');
+      setDebugGesture('point_up (KEYBOARD)');
     }
   };
 
