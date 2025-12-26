@@ -213,11 +213,14 @@ export default function HandTracker() {
     if (xRange > 0.08 && extendedFingers >= 3) rawDetected = 'wave';
     else if (extendedFingers >= 3) rawDetected = 'open';
     else if (extendedFingers === 0) rawDetected = 'fist';
-    else if (extendedFingers === 1) {
-      // Point Up: Index finger tip must be significantly higher (lower Y) than all other landmarks
-      const otherTips = [4, 12, 16, 20];
-      const isPointUp = otherTips.every(idx => indexTip.y < landmarks[idx].y - 0.05);
-      if (isPointUp) rawDetected = 'point_up';
+    else if (extendedFingers === 1 || extendedFingers === 2) {
+      // Point Up: Index finger tip (8) must be significantly higher (lower Y) than middle, ring, pinky
+      const otherTips = [12, 16, 20]; // Ignore thumb (4) for the height check as it can be high
+      const isIndexPointed = indexTip.y < landmarks[12].y - 0.08 && 
+                             indexTip.y < landmarks[16].y - 0.08 &&
+                             indexTip.y < landmarks[20].y - 0.08;
+      
+      if (isIndexPointed) rawDetected = 'point_up';
     }
 
     // Stability Buffer: Require 5 frames of consistency
