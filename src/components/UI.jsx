@@ -268,8 +268,8 @@ export default function UI() {
         <div className="hidden sm:block mt-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-xs max-w-[220px]">
            <p className="font-bold mb-2 text-vintage-gold tracking-widest">INTERACTION GUIDE:</p>
            <ul className="space-y-1.5 opacity-90">
-             <li>• <span className="text-white font-semibold">Open Palm (O)</span>: Bloom / Slow</li>
-             <li>• <span className="text-white font-semibold">Wave (A/D)</span>: Faster Rotate</li>
+             <li>• <span className="text-white font-semibold">Open Palm (O)</span>: Bloom</li>
+             <li>• <span className="text-white font-semibold">Swipe (Open)</span>: Rotate Ring</li>
              <li>• <span className="text-white font-semibold">Closed Fist (F)</span>: Reset Tree</li>
              <li>• <span className="text-white font-semibold">Pinch (P)</span>: Focus Photo</li>
            </ul>
