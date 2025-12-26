@@ -332,8 +332,7 @@ export default function ChristmasTree() {
         setFocusedId(null);
       }
     }
-    }
-    
+
     // Handle Point Up on Tree phase - Random photo focus if none focused
     if (phase === 'tree' && isPointUp && !focusedId && photos.length > 0) {
       const randomIdx = Math.floor(Math.random() * photos.length);
