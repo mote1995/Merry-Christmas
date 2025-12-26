@@ -219,6 +219,8 @@ export default function HandTracker() {
     gestureBuffer.current.push(rawDetected);
     if (gestureBuffer.current.length > 5) gestureBuffer.current.shift();
 
+    const allMatch = gestureBuffer.current.every(g => g === rawDetected);
+    const isWave = rawDetected === 'wave';
     const { isKeyboardPinch } = useStore.getState();
 
     if (!isKeyboardPinch && (allMatch || (isWave && gestureBuffer.current.filter(g => g === 'wave').length >= 2))) {
