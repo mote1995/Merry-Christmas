@@ -99,7 +99,7 @@ export default function UI() {
   React.useEffect(() => {
     const handleKeyDown = (e) => {
       const key = e.key.toLowerCase();
-      if (key === 'p') setGesture('pinch');
+      if (key === 'p') setGesture('point_up');
       if (key === 'o') setGesture('open');
       if (key === 'f') setGesture('fist');
       if (key === 'a') {

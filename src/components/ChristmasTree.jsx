@@ -278,7 +278,7 @@ export default function ChristmasTree() {
       ringRef.current.position.set(0, 0, 0);
       photoGroupRef.current.position.set(0, 0, 0);
 
-      if (phase === 'blooming' && !focusedId) {
+      if (phase === 'blooming' && !focusedId && gesture !== 'point_up') {
         // Constant slow rotation for everything
         const baseRotation = 0.1;
         ringRef.current.rotation.y += baseRotation * delta;
@@ -308,10 +308,9 @@ export default function ChristmasTree() {
             // IGNORE BACK SIDE: We only want the front half (z < 0.2). 
             if (_v1.z > 0.2) return; 
 
-            // Score based on distance to screen center (x,y) and HEAVY depth penalty
-            const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
-            // Smaller score is better. Prioritize proximity to screen center and then depth.
-            const score = distToCenter + (_v1.z + 1) * 3.0; 
+            // Score based on depth (primary) and distance to screen center (secondary)
+            // _v1.z in NDC is depth (-1 to 1). Smallest is closest.
+            const score = (_v1.z + 1) * 10.0 + Math.abs(_v1.x) * 2.0; 
             
             if (score < minScore) {
               minScore = score;
