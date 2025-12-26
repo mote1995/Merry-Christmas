@@ -275,10 +275,14 @@ export default function UI() {
         return { ...p, url: base64 };
       }));
 
-      // 2. Serialize BGM if user uploaded it
+      // 2. Serialize BGM (Force Base64 even for default paths to ensure standalone works offline)
       let serializedBgmUrl = bgmUrl;
-      if (bgmUrl && bgmUrl.startsWith('blob:')) {
-        serializedBgmUrl = await toBase64(bgmUrl);
+      if (bgmUrl && (bgmUrl.startsWith('blob:') || !bgmUrl.startsWith('http'))) {
+        try {
+          serializedBgmUrl = await toBase64(bgmUrl);
+        } catch (e) {
+          console.warn("Failed to inline BGM, falling back to original URL", e);
+        }
       }
 
       const memoryData = {
@@ -287,18 +291,28 @@ export default function UI() {
         bgmUrl: serializedBgmUrl
       };
 
-      // 3. Get Base HTML and Inject
-      // We take the current HTML but we need to strip any existing __FESTIVE_MEMORY__ block
-      let html = document.documentElement.outerHTML;
+      // 3. Get Source HTML and Inject
+      let html = "";
+      try {
+        // Fetch the actual source file to get a "clean" template with DOCTYPE
+        const response = await fetch(window.location.href);
+        html = await response.text();
+      } catch (e) {
+        // Fallback to current DOM if fetch fails
+        html = document.documentElement.outerHTML;
+        if (!html.startsWith('<!DOCTYPE')) html = '<!DOCTYPE html>\n' + html;
+      }
       
-      // Clean up existing memory scripts to avoid bloating or collisions
+      // Clean up any existing memory scripts to avoid conflicts
       html = html.replace(/<script id="festive-memory-data">[\s\S]*?<\/script>/g, "");
       
       const dataScript = `<script id="festive-memory-data">window.__FESTIVE_MEMORY__ = ${JSON.stringify(memoryData)};</script>`;
       
-      // Insert before </head> or <body>
+      // Insert Data Script
       if (html.includes('</head>')) {
         html = html.replace('</head>', `${dataScript}</head>`);
+      } else if (html.includes('<head>')) {
+        html = html.replace('<head>', `<head>${dataScript}`);
       } else {
         html = html.replace('<body>', `<body>${dataScript}`);
       }
