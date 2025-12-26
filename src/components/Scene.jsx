@@ -12,7 +12,6 @@ import {
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import ChristmasTree from './ChristmasTree';
 import useStore from '../store';
-import useStore from '../store';
 import { useThree, useFrame } from '@react-three/fiber';
 
 function AdaptiveCamera() {
