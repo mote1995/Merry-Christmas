@@ -50,6 +50,10 @@ const useStore = create((set) => ({
   // Focused photo ID
   focusedId: null,
   setFocusedId: (id) => set({ focusedId: id }),
+
+  // Keyboard Override
+  isKeyboardPinch: false,
+  setKeyboardPinch: (val) => set({ isKeyboardPinch: val }),
 }));
 
 export default useStore;

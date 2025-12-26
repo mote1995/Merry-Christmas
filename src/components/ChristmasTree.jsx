@@ -28,7 +28,7 @@ const COLORS = [
 ];
 
 export default function ChristmasTree() {
-  const { phase, setPhase, photos, gesture, focusedId, setFocusedId, handVelocityX } = useStore();
+  const { phase, setPhase, photos, gesture, focusedId, setFocusedId, handVelocityX, setKeyboardPinch } = useStore();
   const particlesRef = useRef();
   const sparklesRef = useRef();
   const ringRef = useRef();
@@ -161,6 +161,30 @@ export default function ChristmasTree() {
       window.removeEventListener('touchend', handleUp);
     };
   }, [phase]);
+
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const key = e.key.toLowerCase();
+      if (key === 'o') setPhase('blooming');
+      if (key === 'f') setPhase('tree');
+      if (key === 'a') rotationVelocity.current -= 10;
+      if (key === 'd') rotationVelocity.current += 10;
+      if (key === 'p') setKeyboardPinch(true);
+    };
+
+    const handleKeyUp = (e) => {
+      const key = e.key.toLowerCase();
+      if (key === 'p') setKeyboardPinch(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [setPhase, setKeyboardPinch]);
 
   useFrame((state, delta) => {
     const { mouse, clock } = state;

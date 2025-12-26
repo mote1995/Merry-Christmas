@@ -298,16 +298,16 @@ export default function UI() {
           <span className="text-[10px] sm:text-xs font-medium tracking-widest uppercase">Gesture: {gesture}</span>
         </div>
         <div className="text-[9px] sm:text-[10px] opacity-50 uppercase tracking-tighter">
-          Phase: {phase} | Sync: 04:39:00
+          Phase: {phase} | Sync: 05:05:00
         </div>
         {/* Hidden on very small screens or made smaller */}
-        <div className="hidden sm:block mt-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-xs max-w-[220px]">
-           <p className="font-bold mb-2 text-vintage-gold tracking-widest">INTERACTION GUIDE:</p>
+        <div className="hidden sm:block mt-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-[10px] max-w-[240px]">
+           <p className="font-bold mb-2 text-vintage-gold tracking-widest text-xs">INTERACTION GUIDE:</p>
            <ul className="space-y-1.5 opacity-90">
-             <li>• <span className="text-white font-semibold">Open Palm (O)</span>: Bloom</li>
-             <li>• <span className="text-white font-semibold">Closed Fist (F)</span>: Reset</li>
-             <li>• <span className="text-white font-semibold">Swipe</span>: Spin Tree</li>
-             <li>• <span className="text-white font-semibold">Pinch (P)</span>: Focus Photo</li>
+             <li>• <span className="text-white font-semibold">Open Palm / O</span>: Bloom</li>
+             <li>• <span className="text-white font-semibold">Closed Fist / F</span>: Reset</li>
+             <li>• <span className="text-white font-semibold">Swipe / A-D</span>: Spin View</li>
+             <li>• <span className="text-white font-semibold">Pinch / P</span>: Focus Mode</li>
            </ul>
         </div>
       </div>
