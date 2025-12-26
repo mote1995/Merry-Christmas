@@ -276,8 +276,8 @@ export default function UI() {
         </div>
       </div>
 
-      {/* Bottom Player - Repositioned Higher */}
-      <div className="w-full max-w-md pointer-events-auto mb-4 sm:absolute sm:bottom-32 sm:right-8 sm:w-auto sm:mb-0">
+      {/* Control Panel - Positioned Under Camera (Stacked Top-Right) */}
+      <div className="w-full max-w-md pointer-events-auto mb-4 sm:absolute sm:top-[152px] sm:right-12 sm:w-auto sm:mb-0">
         <audio ref={audioRef} src={bgmUrl} loop />
         
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-3 sm:p-4 rounded-3xl flex flex-col sm:flex-row items-center gap-2 sm:gap-4 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_50px_rgba(212,175,55,0.3)] transition-all duration-1000 animate-pulse-slow">

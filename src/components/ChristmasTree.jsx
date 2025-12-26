@@ -198,6 +198,8 @@ export default function ChristmasTree() {
     if (sparklesRef.current) {
       const mesh = sparklesRef.current;
       const dummy = new THREE.Object3D();
+      const tempColor = new THREE.Color();
+      const SPARKLE_PALETTE = ['#D4AF37', '#800020', '#5D8AA8', '#E0BFB8', '#F7E7CE'];
 
       ornamentPositions.forEach((pos, i) => {
         if (phase === 'tree') {
@@ -220,15 +222,22 @@ export default function ChristmasTree() {
         
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
+
+        // Apply premium colors
+        const colStr = SPARKLE_PALETTE[i % SPARKLE_PALETTE.length];
+        tempColor.set(colStr);
+        mesh.setColorAt(i, tempColor);
       });
       mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
 
     // Apply rotation to the main group
     if (ringRef.current) {
       if (phase === 'blooming' && !focusedId) {
-        // Inertial velocity
-        ringRef.current.rotation.y += rotationVelocity.current * delta;
+        // Very slow base rotation (0.1) + inertial velocity
+        const baseRotation = 0.1;
+        ringRef.current.rotation.y += (baseRotation + rotationVelocity.current) * delta;
       } else if (phase === 'tree') {
         // Ensure ring is reset when on tree
         ringRef.current.rotation.y = THREE.MathUtils.lerp(ringRef.current.rotation.y, 0, 0.1);
