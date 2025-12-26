@@ -299,30 +299,39 @@ export default function ChristmasTree() {
         let closestId = null;
         let minScore = Infinity;
         
-        // Use world positions for accurate centering
-        ringRef.current.traverse((child) => {
-          if (child.userData && child.userData.id) {
-            child.getWorldPosition(_v1);
-            _v1.project(state.camera);
-            
-            // IGNORE BACK SIDE: We only want the front half (z < 0.2). 
-            if (_v1.z > 0.2) return; 
+        // Traverse only the photo group for efficiency and accuracy
+        if (photoGroupRef.current) {
+          photoGroupRef.current.traverse((child) => {
+            if (child.userData && child.userData.id) {
+              child.getWorldPosition(_v1);
+              _v1.project(state.camera);
+              
+              // RELAXED DEPTH CHECK: NDC Z is -1(near) to 1(far). 0.6 allows more front-ish photos.
+              if (_v1.z > 0.6) return; 
 
-            // Score based on screen center (primary) and depth (secondary to ensure front-side)
-            const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
-            const score = distToCenter + (_v1.z + 1) * 0.5; 
-            
-            if (score < minScore) {
-              minScore = score;
-              closestId = child.userData.id;
+              // Score based on screen center (primary) and depth (secondary)
+              const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
+              const score = distToCenter + (_v1.z + 1) * 0.5; 
+              
+              if (score < minScore) {
+                minScore = score;
+                closestId = child.userData.id;
+              }
             }
-          }
-        });
-        if (closestId) setFocusedId(closestId);
+          });
+        }
+        if (closestId) {
+          console.log("Point-Up Selected Photo:", closestId);
+          setFocusedId(closestId);
+        }
       }
     } else if (lastGesture.current === 'point_up' || lastGesture.current === 'grab' || lastGesture.current === 'pinch') {
       // Automatic restore once released
-      if (focusedId) setFocusedId(null);
+      if (focusedId) {
+        console.log("Point-Up Focus Released");
+        setFocusedId(null);
+      }
+    }
     }
     
     // Handle Point Up on Tree phase - Random photo focus if none focused
