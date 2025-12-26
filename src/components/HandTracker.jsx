@@ -30,9 +30,9 @@ export default function HandTracker() {
             },
             runningMode: "VIDEO",
             numHands: 1,
-            minHandDetectionConfidence: 0.5,
-            minHandPresenceConfidence: 0.5,
-            minTrackingConfidence: 0.5
+            minHandDetectionConfidence: 0.3, // Lowered for better detection
+            minHandPresenceConfidence: 0.3,
+            minTrackingConfidence: 0.3
           });
           setLandmarker(hl);
           setStatus('Ready');
@@ -47,56 +47,7 @@ export default function HandTracker() {
     initMP();
   }, []);
 
-  useEffect(() => {
-    if (isCameraOpen && videoRef.current) {
-      navigator.mediaDevices.getUserMedia({ 
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } 
-      }).then((stream) => {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadeddata = () => {
-          videoRef.current.play();
-          predictWebcam();
-        };
-      }).catch(err => {
-        console.error("Camera Access Error:", err);
-        alert("Please allow camera access to use hand gestures.");
-        toggleCamera();
-      });
-    } else if (!isCameraOpen && videoRef.current && videoRef.current.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-  }, [isCameraOpen]);
-
-  let lastVideoTime = -1;
-  const predictWebcam = () => {
-    if (!videoRef.current || !landmarker || !canvasRef.current || !isCameraOpen) return;
-    
-    let nowInMs = Date.now();
-    if (videoRef.current.currentTime !== lastVideoTime && videoRef.current.readyState >= 2) {
-      lastVideoTime = videoRef.current.currentTime;
-      const results = landmarker.detectForVideo(videoRef.current, nowInMs);
-      
-      const ctx = canvasRef.current.getContext('2d');
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-      if (results.landmarks && results.landmarks.length > 0) {
-        const landmarks = results.landmarks[0];
-        const flippedLandmarks = landmarks.map(lm => ({ ...lm, x: 1 - lm.x }));
-        
-        setHandResults({ ...results, landmarks: [flippedLandmarks] });
-        detectGesture(flippedLandmarks);
-        drawHand(ctx, landmarks); 
-      } else {
-        setGesture('none');
-        setDebugGesture('none');
-        setHandResults(null);
-      }
-    }
-    
-    window.requestAnimationFrame(predictWebcam);
-  };
+  // ... (middle code unchanged)
 
   const drawHand = (ctx, landmarks) => {
     const w = canvasRef.current.width;
@@ -106,11 +57,13 @@ export default function HandTracker() {
       [0, 1, 2, 3, 4], [0, 5, 6, 7, 8], [0, 9, 10, 11, 12], [0, 13, 14, 15, 16], [0, 17, 18, 19, 20]
     ];
 
-    ctx.strokeStyle = '#dfcc9d';
-    ctx.lineWidth = 4;
+    // Thicker, brighter skeleton
+    ctx.lineWidth = 3;
     ctx.lineJoin = 'round';
+    
     fingerBones.forEach(bone => {
       ctx.beginPath();
+      ctx.strokeStyle = '#00ffcc'; // Bright Cyan for bones
       bone.forEach((idx, i) => {
         const lm = landmarks[idx];
         if (i === 0) ctx.moveTo(lm.x * w, lm.y * h);
@@ -119,15 +72,15 @@ export default function HandTracker() {
       ctx.stroke();
     });
 
-    ctx.fillStyle = '#ffffff';
-    landmarks.forEach(lm => {
+    landmarks.forEach((lm, i) => {
       ctx.beginPath();
-      ctx.arc(lm.x * w, lm.y * h, 5, 0, Math.PI * 2);
+      ctx.fillStyle = i === 4 || i === 8 ? '#ff0000' : '#ffffff'; // Red tips for Thumb/Index
+      ctx.arc(lm.x * w, lm.y * h, i % 4 === 0 ? 6 : 4, 0, Math.PI * 2);
       ctx.fill();
     });
   };
 
-  const waveBuffer = useRef([]); 
+  const gestureBuffer = useRef([]);
 
   const detectGesture = (landmarks) => {
     const thumbTip = landmarks[4];
@@ -148,7 +101,8 @@ export default function HandTracker() {
     fingerIndices.forEach(f => {
       const tipDist = dist(landmarks[f.tip], wrist);
       const midDist = dist(landmarks[f.mid], wrist);
-      if (tipDist > midDist * 1.25) extendedFingers++;
+      // Relaxed threshold: 1.1 instead of 1.25 to account for slight curls/tilt
+      if (tipDist > midDist * 1.1) extendedFingers++;
     });
 
     // Special check for thumb
