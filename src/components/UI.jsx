@@ -228,6 +228,28 @@ export default function UI() {
     input.click();
   };
 
+  const compressImage = (url) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onerror = () => reject(new Error("Failed to load image for compression"));
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 300; 
+        let w = img.width;
+        let h = img.height;
+        if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } }
+        else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.5));
+      };
+      img.src = url;
+    });
+  };
+
   const toBase64 = (url) => {
     return new Promise((resolve, reject) => {
       if (!url || url.startsWith('data:')) return resolve(url);
