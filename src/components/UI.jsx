@@ -378,7 +378,7 @@ export default function UI() {
              <li>• ✋ <span className="text-white font-semibold">Open Palm / O</span>: Bloom</li>
              <li>• ✊ <span className="text-white font-semibold">Closed Fist / F</span>: Reset</li>
              <li>• ↔️ <span className="text-white font-semibold">Swipe / A-D</span>: Spin View</li>
-             <li>• ☝️ <span className="text-white font-semibold">Point Up / P</span>: Focus Mode</li>
+             <li>• ☝️ <span className="text-white font-semibold">Point Up / P</span>: Magnetic Focus</li>
            </ul>
         </div>
       </div>

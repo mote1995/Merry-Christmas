@@ -433,25 +433,24 @@ function SmartPhoto({ photo, index, total }) {
     if (isFocused) {
       // MAGNETIC FOCUS MODE: Moves to absolute center of screen
       // Calculate a point directly in front of camera
-      const dist = 6; // Fixed distance for consistent scale
+      const dist = 8; // Slightly further for better clarity and comfortable margin
       _v1.set(0, 0, -dist).applyQuaternion(state.camera.quaternion).add(state.camera.position);
       
       // Convert world target to local parent coordinates
       const targetLocal = meshRef.current.parent.worldToLocal(_v1.clone());
-      meshRef.current.position.lerp(targetLocal, 0.15); // Snappy magnet effect
+      meshRef.current.position.lerp(targetLocal, 0.25); // snappier magnet effect
       
       // Positive View Lock: lookAt camera with world-up orientation
-      // Convert camera orientation to parent local space
       const parentWorldQuat = new THREE.Quaternion();
       meshRef.current.parent.getWorldQuaternion(parentWorldQuat);
       const localFaceQuat = state.camera.quaternion.clone().multiply(parentWorldQuat.invert());
-      meshRef.current.quaternion.slerp(localFaceQuat, 0.15);
+      meshRef.current.quaternion.slerp(localFaceQuat, 0.25);
       
-      // Scale: Target ~70% screen height
+      // Scale: Target ~75% screen height for a premium feel
       const vFOV = (state.camera.fov * Math.PI) / 180;
       const visibleHeight = 2 * Math.tan(vFOV / 2) * dist;
-      const targetScale = visibleHeight * 0.7;
-      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 0.15);
+      const targetScale = visibleHeight * 0.7; // 70% as requested
+      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 0.25);
       
     } else {
       meshRef.current.position.lerp(targetPos, 0.05);
