@@ -306,13 +306,12 @@ export default function ChristmasTree() {
               child.getWorldPosition(_v1);
               _v1.project(state.camera);
               
-              // RELAXED DEPTH CHECK: NDC Z is -1(near) to 1(far). 0.6 allows more front-ish photos.
-              if (_v1.z > 0.6) return; 
-
               // Score based on screen center (primary) and depth (secondary)
               const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
-              const score = distToCenter + (_v1.z + 1) * 0.5; 
+              const score = distToCenter + (_v1.z + 1) * 0.1; // Reduced depth influence
               
+              console.log(`Photo ${child.userData.id} | NDC: x:${_v1.x.toFixed(2)} y:${_v1.y.toFixed(2)} z:${_v1.z.toFixed(2)} | Score: ${score.toFixed(2)}`);
+
               if (score < minScore) {
                 minScore = score;
                 closestId = child.userData.id;
