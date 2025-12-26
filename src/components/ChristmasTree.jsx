@@ -308,9 +308,9 @@ export default function ChristmasTree() {
             // IGNORE BACK SIDE: We only want the front half (z < 0.2). 
             if (_v1.z > 0.2) return; 
 
-            // Score based on depth (primary) and distance to screen center (secondary)
-            // _v1.z in NDC is depth (-1 to 1). Smallest is closest.
-            const score = (_v1.z + 1) * 10.0 + Math.abs(_v1.x) * 2.0; 
+            // Score based on screen center (primary) and depth (secondary to ensure front-side)
+            const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
+            const score = distToCenter + (_v1.z + 1) * 0.5; 
             
             if (score < minScore) {
               minScore = score;
@@ -468,6 +468,7 @@ function SmartPhoto({ photo, index, total }) {
   return (
     <mesh 
       ref={meshRef} 
+      renderOrder={isFocused ? 1000 : 0}
       userData={{ id: photo.id }}
       onClick={(e) => {
         e.stopPropagation();
