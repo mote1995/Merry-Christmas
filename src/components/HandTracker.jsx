@@ -6,9 +6,42 @@ export default function HandTracker() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const { isCameraOpen, toggleCamera, setGesture, setHandResults, setHandVelocityX, gesture } = useStore();
-  const [landmarker, setLandmarker] = useState(null);
+  const [ landmarker, setLandmarker] = useState(null);
   const [debugGesture, setDebugGesture] = useState('none');
   const [status, setStatus] = useState('Initializing...');
+
+  // Draggable State
+  const [camPos, setCamPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+
+  const handlePointerDown = (e) => {
+    setIsDragging(true);
+    dragStart.current = {
+      x: e.clientX - camPos.x,
+      y: e.clientY - camPos.y
+    };
+  };
+
+  useEffect(() => {
+    const handlePointerMove = (e) => {
+      if (!isDragging) return;
+      setCamPos({
+        x: e.clientX - dragStart.current.x,
+        y: e.clientY - dragStart.current.y
+      });
+    };
+    const handlePointerUp = () => setIsDragging(false);
+
+    if (isDragging) {
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
+    }
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [isDragging]);
 
   useEffect(() => {
     async function initMP() {
@@ -196,7 +229,11 @@ export default function HandTracker() {
   };
 
   return (
-    <div className="absolute top-4 right-12 z-50">
+    <div 
+      className="absolute top-4 right-12 z-50 cursor-move"
+      style={{ transform: `translate(${camPos.x}px, ${camPos.y}px)` }}
+      onPointerDown={handlePointerDown}
+    >
       <div className={`relative w-40 h-30 sm:w-48 sm:h-36 bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/20 transition-all ${isCameraOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <video 
           ref={videoRef} 

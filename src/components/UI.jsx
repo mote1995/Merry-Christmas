@@ -13,6 +13,42 @@ export default function UI() {
   const [isSharing, setIsSharing] = React.useState(false);
   const audioRef = React.useRef(null);
 
+  // Draggable Panel State
+  const [panelPos, setPanelPos] = React.useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = React.useState(false);
+  const dragStart = React.useRef({ x: 0, y: 0 });
+
+  const handlePointerDown = (e) => {
+    // Only drag from the panel backdrop, not buttons or inputs
+    if (e.target.closest('button') || e.target.closest('input')) return;
+    setIsDragging(true);
+    dragStart.current = {
+      x: e.clientX - panelPos.x,
+      y: e.clientY - panelPos.y
+    };
+  };
+
+  React.useEffect(() => {
+    const handlePointerMove = (e) => {
+      if (!isDragging) return;
+      setPanelPos({
+        x: e.clientX - dragStart.current.x,
+        y: e.clientY - dragStart.current.y
+      });
+    };
+
+    const handlePointerUp = () => setIsDragging(false);
+
+    if (isDragging) {
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
+    }
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [isDragging]);
+
   const handleMusicUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -262,7 +298,7 @@ export default function UI() {
           <span className="text-[10px] sm:text-xs font-medium tracking-widest uppercase">Gesture: {gesture}</span>
         </div>
         <div className="text-[9px] sm:text-[10px] opacity-50 uppercase tracking-tighter">
-          Phase: {phase} | Sync: 04:28:00
+          Phase: {phase} | Sync: 04:33:00
         </div>
         {/* Hidden on very small screens or made smaller */}
         <div className="hidden sm:block mt-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-xs max-w-[220px]">
@@ -276,8 +312,12 @@ export default function UI() {
         </div>
       </div>
 
-      {/* Control Panel - Positioned Under Camera (Stacked Top-Right) */}
-      <div className="w-full max-w-md pointer-events-auto mb-4 sm:absolute sm:top-[180px] sm:right-12 sm:w-auto sm:mb-0">
+      {/* Control Panel - Positioned Under Camera (Draggable Stack) */}
+      <div 
+        className="w-full max-w-md pointer-events-auto mb-4 sm:fixed sm:top-[200px] sm:right-12 sm:w-auto sm:mb-0 cursor-move"
+        style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
+        onPointerDown={handlePointerDown}
+      >
         <audio ref={audioRef} src={bgmUrl} loop />
         
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-3 sm:p-4 rounded-3xl flex flex-col sm:flex-row items-center gap-2 sm:gap-4 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_50px_rgba(212,175,55,0.3)] transition-all duration-1000 animate-pulse-slow">
