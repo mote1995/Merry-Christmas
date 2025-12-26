@@ -299,28 +299,38 @@ export default function ChristmasTree() {
         let closestId = null;
         let minScore = Infinity;
         
-        // Traverse only the photo group for efficiency and accuracy
         if (photoGroupRef.current) {
+          let foundCount = 0;
           photoGroupRef.current.traverse((child) => {
-            if (child.userData && child.userData.id) {
+            if (child.isMesh && child.userData && child.userData.id) {
+              foundCount++;
               child.getWorldPosition(_v1);
               _v1.project(state.camera);
               
-              // Score based on screen center (primary) and depth (secondary)
+              // Use screen-space distance (X, Y) primarily
+              // Z in NDC: -1 is near, 1 is far.
               const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
-              const score = distToCenter + (_v1.z + 1) * 0.1; // Reduced depth influence
               
-              console.log(`Photo ${child.userData.id} | NDC: x:${_v1.x.toFixed(2)} y:${_v1.y.toFixed(2)} z:${_v1.z.toFixed(2)} | Score: ${score.toFixed(2)}`);
-
-              if (score < minScore) {
-                minScore = score;
-                closestId = child.userData.id;
+              // Only consider photos that are roughly in the front-hemisphere (z < 0.8)
+              // This prevents selecting photos that are far behind the tree
+              if (_v1.z < 0.8) {
+                const score = distToCenter + (_v1.z + 1) * 0.1;
+                
+                if (score < minScore) {
+                  minScore = score;
+                  closestId = child.userData.id;
+                }
               }
             }
           });
+          
+          if (gesture === 'point_up' && !focusedId && foundCount === 0) {
+             console.warn("Point-Up active but NO photos found in photoGroupRef!");
+          }
         }
+        
         if (closestId) {
-          console.log("Point-Up Selected Photo:", closestId);
+          console.log(`Point-Up Selected Photo: ${closestId} | Score: ${minScore.toFixed(3)}`);
           setFocusedId(closestId);
         }
       }
