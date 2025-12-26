@@ -127,7 +127,7 @@ export default function HandTracker() {
     });
   };
 
-  const waveBuffer = useRef([]); 
+  const gestureBuffer = useRef([]);
 
   const detectGesture = (landmarks) => {
     const thumbTip = landmarks[4];
@@ -162,19 +162,29 @@ export default function HandTracker() {
     setHandVelocityX(wrist.x - prevX);
     const xRange = Math.max(...waveBuffer.current) - Math.min(...waveBuffer.current);
 
-    let detected = 'none';
-    if (xRange > 0.08 && extendedFingers >= 4) detected = 'wave';
-    else if (extendedFingers >= 4) detected = 'open';
-    else if (extendedFingers <= 1) detected = 'fist';
-    else if (dist(thumbTip, indexTip) / palmSize < 0.35) detected = 'pinch';
+    let rawDetected = 'none';
+    if (xRange > 0.08 && extendedFingers >= 4) rawDetected = 'wave';
+    else if (extendedFingers >= 4) rawDetected = 'open';
+    else if (extendedFingers <= 1) rawDetected = 'fist';
+    else if (dist(thumbTip, indexTip) / palmSize < 0.35) rawDetected = 'pinch';
+
+    // Simple Debounce/Stability Buffer
+    gestureBuffer.current.push(rawDetected);
+    if (gestureBuffer.current.length > 5) gestureBuffer.current.shift();
+
+    // Only change state if the last 5 frames agree, OR if it's 'wave' (needs instant response)
+    const allMatch = gestureBuffer.current.every(g => g === rawDetected);
+    const isWave = rawDetected === 'wave'; // Wave is dynamic, so we trust it faster or use its own logic
     
-    setGesture(detected);
-    setDebugGesture(`${detected} (${extendedFingers})`);
+    if (allMatch || (isWave && gestureBuffer.current.filter(g => g === 'wave').length >= 2)) {
+         setGesture(rawDetected);
+         setDebugGesture(`${rawDetected} (${extendedFingers})`);
+    }
   };
 
   return (
-    <div className="absolute bottom-64 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-40 z-50">
-      <div className={`relative w-48 h-36 bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/20 transition-all ${isCameraOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    <div className="absolute top-4 right-4 z-50">
+      <div className={`relative w-32 h-24 sm:w-48 sm:h-36 bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/20 transition-all ${isCameraOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <video 
           ref={videoRef} 
           autoPlay 
