@@ -37,8 +37,8 @@ export default function Scene() {
 
   useFrame((state, delta) => {
     if (groupRef.current) {
-      // Move tree from y=2.0 down to y=0.0 when started
-      const targetY = hasStarted ? 0.0 : 2.0;
+      // Move tree from y=2.0 down to y=-1.0 when started
+      const targetY = hasStarted ? -1.0 : 2.0;
       groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, delta * 1.5);
     }
   });
