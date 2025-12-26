@@ -292,38 +292,15 @@ export default function ChristmasTree() {
       }
     }
 
-    // Handle Point Up (Replaces Grab/Pinch) - Find closest to center (ONLY front side)
+    // Handle Point Up Focus Selection
     const isPointUp = gesture === 'point_up';
     if (isPointUp) {
-      if (!focusedId) {
-        let closestId = null;
-        let minScore = Infinity;
-        
-        if (ringRef.current) {
-          ringRef.current.updateMatrixWorld();
-          ringRef.current.traverse((child) => {
-            if (child.userData && child.userData.id) {
-              child.getWorldPosition(_v1);
-              _v1.project(state.camera);
-              
-              const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
-              
-              // Consider anything roughly in front (depth < 1.0ndc)
-              if (_v1.z < 1.0) {
-                const score = distToCenter + (_v1.z + 1) * 0.05;
-                if (score < minScore) {
-                  minScore = score;
-                  closestId = child.userData.id;
-                }
-              }
-            }
-          });
-        }
-        
-        if (closestId) {
-          console.log(`Point-Up Selected Photo: ${closestId} | Score: ${minScore.toFixed(3)}`);
-          setFocusedId(closestId);
-        }
+      if (!focusedId && photos.length > 0) {
+        // RANDOM SELECTION for both Tree and Blooming as requested
+        const randomIdx = Math.floor(Math.random() * photos.length);
+        const selectedId = photos[randomIdx].id;
+        console.log(`[Focus] Randomly Selected: ${selectedId}`);
+        setFocusedId(selectedId);
       }
     } else if (lastGesture.current === 'point_up' || lastGesture.current === 'grab' || lastGesture.current === 'pinch') {
       // Automatic restore once released
@@ -331,12 +308,6 @@ export default function ChristmasTree() {
         console.log("Point-Up Focus Released");
         setFocusedId(null);
       }
-    }
-
-    // Handle Point Up on Tree phase - Random photo focus if none focused
-    if (phase === 'tree' && isPointUp && !focusedId && photos.length > 0) {
-      const randomIdx = Math.floor(Math.random() * photos.length);
-      setFocusedId(photos[randomIdx].id);
     }
 
     // Clear focus if fist detected (manual reset)
