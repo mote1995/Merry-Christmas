@@ -31,6 +31,7 @@ function AdaptiveCamera() {
 
 export default function Scene() {
   const phase = useStore((state) => state.phase);
+const TreeGroup = () => {
   const { hasStarted } = useStore();
   const groupRef = useRef();
 
@@ -41,6 +42,13 @@ export default function Scene() {
       groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, delta * 1.5);
     }
   });
+
+  return (
+    <group ref={groupRef} position={[0, 2, 0]}>
+      <ChristmasTree />
+    </group>
+  );
+};
 
   return (
     <div className="w-full h-full bg-black">
@@ -77,9 +85,7 @@ export default function Scene() {
           <Environment preset="city" />
 
           {/* 3D Content */}
-          <group ref={groupRef} position={[0, 2, 0]}>
-            <ChristmasTree />
-          </group>
+          <TreeGroup />
 
           {/* Post Processing */}
           <EffectComposer disableNormalPass>
