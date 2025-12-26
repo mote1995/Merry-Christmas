@@ -47,7 +47,56 @@ export default function HandTracker() {
     initMP();
   }, []);
 
-  // ... (middle code unchanged)
+  useEffect(() => {
+    if (isCameraOpen && videoRef.current) {
+      navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } 
+      }).then((stream) => {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadeddata = () => {
+          videoRef.current.play();
+          predictWebcam();
+        };
+      }).catch(err => {
+        console.error("Camera Access Error:", err);
+        alert("Please allow camera access to use hand gestures.");
+        toggleCamera();
+      });
+    } else if (!isCameraOpen && videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  }, [isCameraOpen]);
+
+  let lastVideoTime = -1;
+  const predictWebcam = () => {
+    if (!videoRef.current || !landmarker || !canvasRef.current || !isCameraOpen) return;
+    
+    let nowInMs = Date.now();
+    if (videoRef.current.currentTime !== lastVideoTime && videoRef.current.readyState >= 2) {
+      lastVideoTime = videoRef.current.currentTime;
+      const results = landmarker.detectForVideo(videoRef.current, nowInMs);
+      
+      const ctx = canvasRef.current.getContext('2d');
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+
+      if (results.landmarks && results.landmarks.length > 0) {
+        const landmarks = results.landmarks[0];
+        const flippedLandmarks = landmarks.map(lm => ({ ...lm, x: 1 - lm.x }));
+        
+        setHandResults({ ...results, landmarks: [flippedLandmarks] });
+        detectGesture(flippedLandmarks);
+        drawHand(ctx, landmarks); 
+      } else {
+        setGesture('none');
+        setDebugGesture('none');
+        setHandResults(null);
+      }
+    }
+    
+    window.requestAnimationFrame(predictWebcam);
+  };
 
   const drawHand = (ctx, landmarks) => {
     const w = canvasRef.current.width;
@@ -80,6 +129,7 @@ export default function HandTracker() {
     });
   };
 
+  const waveBuffer = useRef([]);
   const gestureBuffer = useRef([]);
 
   const detectGesture = (landmarks) => {

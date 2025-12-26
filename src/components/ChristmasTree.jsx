@@ -57,6 +57,8 @@ export default function ChristmasTree() {
     }
   }, [gesture, phase]);
 
+  const starRef = useRef();
+
   // Transition handling with GSAP
   useEffect(() => {
     if (phase === 'blooming') {
@@ -64,6 +66,24 @@ export default function ChristmasTree() {
         onComplete: () => setPhase('nebula')
       });
       
+      // Animate star to center of ring
+      if (starRef.current) {
+        tl.to(starRef.current.position, {
+          x: 0,
+          y: -1.5,
+          z: 0,
+          duration: 2.2,
+          ease: 'expo.out'
+        }, 0);
+        tl.to(starRef.current.scale, {
+          x: 2,
+          y: 2,
+          z: 2,
+          duration: 2,
+          ease: 'expo.out'
+        }, 0);
+      }
+
       // Animate particles to nebula
       positions.forEach((pos, i) => {
         tl.to(pos, {
@@ -73,6 +93,22 @@ export default function ChristmasTree() {
           duration: 2,
           ease: 'expo.out'
         }, 0);
+        
+        // Color transition for particles
+        const targetColor = new THREE.Color(i % 2 === 0 ? '#D4AF37' : '#00ffcc');
+        const currentColor = new THREE.Color('#2d5a27');
+        tl.to(currentColor, {
+          r: targetColor.r,
+          g: targetColor.g,
+          b: targetColor.b,
+          duration: 1.5,
+          onUpdate: () => {
+            if (particlesRef.current) {
+               particlesRef.current.setColorAt(i, currentColor);
+               particlesRef.current.instanceColor.needsUpdate = true;
+            }
+          }
+        }, 0.5);
       });
 
       // Animate ornaments to nebula outer ring
@@ -91,6 +127,24 @@ export default function ChristmasTree() {
         onComplete: () => setPhase('tree')
       });
 
+      // Animate star back to top
+      if (starRef.current) {
+        tl.to(starRef.current.position, {
+          x: 0,
+          y: 5.5,
+          z: 0,
+          duration: 1.5,
+          ease: 'power3.inOut'
+        }, 0);
+        tl.to(starRef.current.scale, {
+          x: 1,
+          y: 1,
+          z: 1,
+          duration: 1.5,
+          ease: 'power3.inOut'
+        }, 0);
+      }
+
       positions.forEach((pos, i) => {
         tl.to(pos, {
           x: treePoints[i].x,
@@ -99,6 +153,22 @@ export default function ChristmasTree() {
           duration: 1.5,
           ease: 'power3.inOut'
         }, 0);
+
+        // Color transition back to green
+        const targetColor = new THREE.Color('#2d5a27');
+        const startColor = new THREE.Color(i % 2 === 0 ? '#D4AF37' : '#00ffcc');
+        tl.to(startColor, {
+          r: targetColor.r,
+          g: targetColor.g,
+          b: targetColor.b,
+          duration: 1.2,
+          onUpdate: () => {
+            if (particlesRef.current) {
+               particlesRef.current.setColorAt(i, startColor);
+               particlesRef.current.instanceColor.needsUpdate = true;
+            }
+          }
+        }, 0.2);
       });
 
       ornamentPositions.forEach((pos, i) => {
@@ -161,7 +231,7 @@ export default function ChristmasTree() {
   }, [phase]);
 
   useFrame((state, delta) => {
-    const { mouse } = state;
+    const { mouse, clock } = state;
     const mousePos = new THREE.Vector3(mouse.x * 10, mouse.y * 10, 0);
 
     // Apply Friction / Decay
@@ -196,22 +266,19 @@ export default function ChristmasTree() {
           pos.lerp(origin, 0.05);
         }
 
-        // Subtle twinkle for main foliage
-        const foliageTwinkle = Math.sin(state.clock.elapsedTime * 3 + i) * 0.2 + 0.8;
+        // Nebula particles look different
+        const isNebula = phase === 'nebula' || phase === 'blooming';
+        
+        // Color transition logic (internal instancedMesh color management might be complex, 
+        // using scale and position for visual distinction first)
+        const scale = isNebula ? (0.1 + Math.sin(clock.elapsedTime * 2 + i) * 0.05) : 0.05;
+
         dummy.position.copy(pos);
-        dummy.scale.setScalar(0.05 * foliageTwinkle);
+        dummy.scale.setScalar(scale);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
       });
       mesh.instanceMatrix.needsUpdate = true;
-    }
-
-    // Initialize Sparkling Particle Colors once
-    if (sparklesRef.current && !sparklesRef.current.instanceColor) {
-      for (let i = 0; i < SPARKLE_COUNT; i++) {
-        sparklesRef.current.setColorAt(i, new THREE.Color(COLORS[i % COLORS.length]));
-      }
-      sparklesRef.current.instanceColor.needsUpdate = true;
     }
 
     // Update Sparkling Particles
@@ -234,8 +301,9 @@ export default function ChristmasTree() {
         dummy.position.copy(pos);
         
         // Intensified sparkling effect: Random flickering (reduced frequency)
-        const flicker = Math.sin(state.clock.elapsedTime * 5 + i * 100) * 0.5 + 0.5;
-        dummy.scale.setScalar(0.7 + flicker * 0.6);
+        const flicker = clock.elapsedTime * 5 + i * 100;
+        const scale = (phase === 'nebula' || phase === 'blooming') ? 1.5 : 1.0;
+        dummy.scale.setScalar((0.7 + Math.sin(flicker) * 0.6) * scale);
         
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
@@ -297,7 +365,7 @@ export default function ChristmasTree() {
   return (
     <group>
       {/* Little Star Top */}
-      <mesh position={[0, 5.5, 0]}>
+      <mesh ref={starRef} position={[0, 5.5, 0]}>
         <sphereGeometry args={[0.3, 16, 16]} />
         <meshStandardMaterial color="#FFE680" emissive="#FFD700" emissiveIntensity={5} />
         <pointLight intensity={2} color="#FFD700" />
