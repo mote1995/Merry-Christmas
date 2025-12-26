@@ -292,40 +292,14 @@ export default function ChristmasTree() {
       }
     }
 
-    // Handle Point Up Focus Selection - CLOSEST TO CENTER
+    // Handle Point Up Focus Selection - RANDOM (Unified for Tree & Blooming)
     const isPointUp = gesture === 'point_up';
     if (isPointUp) {
       if (!focusedId && photos.length > 0) {
-        let closestId = null;
-        let minScore = Infinity;
-
-        if (ringRef.current) {
-          ringRef.current.updateMatrixWorld();
-          ringRef.current.traverse((child) => {
-            if (child.userData && child.userData.id) {
-              child.getWorldPosition(_v1);
-              _v1.project(state.camera);
-              
-              // 2D distance to screen center (-1 to 1 NDC)
-              const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
-              
-              // Depth Filter: Ignore things truly behind camera or on the far back side of the tree
-              // NDC Z: -1 is near clip, 1 is far clip. 0.8 is a safe front-half limit.
-              if (_v1.z < 0.8) {
-                const score = distToCenter + (_v1.z + 1) * 0.05; // Slightly prioritize front elements
-                if (score < minScore) {
-                  minScore = score;
-                  closestId = child.userData.id;
-                }
-              }
-            }
-          });
-        }
-
-        if (closestId) {
-          console.log(`[Focus] Proximity Selected: ${closestId} | Score: ${minScore.toFixed(3)}`);
-          setFocusedId(closestId);
-        }
+        const randomIdx = Math.floor(Math.random() * photos.length);
+        const selectedId = photos[randomIdx].id;
+        console.log(`[Focus] Random Selection Triggered: ${selectedId}`);
+        setFocusedId(selectedId);
       }
     } else if (lastGesture.current === 'point_up' || lastGesture.current === 'grab' || lastGesture.current === 'pinch') {
       // Automatic restore once released
