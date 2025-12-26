@@ -52,8 +52,8 @@ const useStore = create((set) => ({
   setFocusedId: (id) => set({ focusedId: id }),
 
   // Keyboard Override
-  isKeyboardPinch: false,
-  setKeyboardPinch: (val) => set({ isKeyboardPinch: val }),
+  isKeyboardGrab: false,
+  setKeyboardGrab: (val) => set({ isKeyboardGrab: val }),
 }));
 
 export default useStore;

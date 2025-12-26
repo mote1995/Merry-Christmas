@@ -298,7 +298,7 @@ export default function UI() {
           <span className="text-[10px] sm:text-xs font-medium tracking-widest uppercase">Gesture: {gesture}</span>
         </div>
         <div className="text-[9px] sm:text-[10px] opacity-50 uppercase tracking-tighter">
-          Phase: {phase} | Sync: 05:08:00
+          Phase: {phase} | Sync: 05:25:00
         </div>
         {/* Hidden on very small screens or made smaller */}
         <div className="hidden sm:block mt-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-[10px] max-w-[240px]">
@@ -307,7 +307,7 @@ export default function UI() {
              <li>• <span className="text-white font-semibold">Open Palm / O</span>: Bloom</li>
              <li>• <span className="text-white font-semibold">Closed Fist / F</span>: Reset</li>
              <li>• <span className="text-white font-semibold">Swipe / A-D</span>: Spin View</li>
-             <li>• <span className="text-white font-semibold">Pinch / P</span>: Focus Mode</li>
+             <li>• <span className="text-white font-semibold">Grab / P</span>: Focus Mode</li>
            </ul>
         </div>
       </div>

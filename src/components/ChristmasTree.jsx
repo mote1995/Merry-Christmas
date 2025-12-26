@@ -28,7 +28,7 @@ const COLORS = [
 ];
 
 export default function ChristmasTree() {
-  const { phase, setPhase, photos, gesture, focusedId, setFocusedId, handVelocityX, setKeyboardPinch } = useStore();
+  const { phase, setPhase, photos, gesture, focusedId, setFocusedId, handVelocityX, setKeyboardGrab } = useStore();
   const particlesRef = useRef();
   const sparklesRef = useRef();
   const ringRef = useRef();
@@ -170,12 +170,12 @@ export default function ChristmasTree() {
       if (key === 'f') setPhase('tree');
       if (key === 'a') rotationVelocity.current -= 10;
       if (key === 'd') rotationVelocity.current += 10;
-      if (key === 'p') setKeyboardPinch(true);
+      if (key === 'p') setKeyboardGrab(true);
     };
 
     const handleKeyUp = (e) => {
       const key = e.key.toLowerCase();
-      if (key === 'p') setKeyboardPinch(false);
+      if (key === 'p') setKeyboardGrab(false);
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -184,7 +184,7 @@ export default function ChristmasTree() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [setPhase, setKeyboardPinch]);
+  }, [setPhase, setKeyboardGrab]);
 
   useFrame((state, delta) => {
     const { mouse, clock } = state;
@@ -274,6 +274,10 @@ export default function ChristmasTree() {
 
     // Apply rotation separately
     if (ringRef.current && photoGroupRef.current) {
+      // Ensure nebula stays stationary at origin
+      ringRef.current.position.set(0, 0, 0);
+      photoGroupRef.current.position.set(0, 0, 0);
+
       if (phase === 'blooming' && !focusedId) {
         // Constant slow rotation for everything
         const baseRotation = 0.1;
@@ -288,8 +292,9 @@ export default function ChristmasTree() {
       }
     }
 
-    // Handle Pinch - Find closest to center (prioritizing front photos)
-    if (gesture === 'pinch') {
+    // Handle Grab (Replaces Pinch) - Find closest to center (ONLY front side)
+    const isGrabTriggered = gesture === 'grab' || gesture === 'pinch'; // Compatibility
+    if (isGrabTriggered) {
       if (!focusedId) {
         let closestId = null;
         let minScore = Infinity;
@@ -300,10 +305,16 @@ export default function ChristmasTree() {
             child.getWorldPosition(_v1);
             _v1.project(state.camera);
             
-            // Score based on distance to screen center (x,y) and depth (z)
-            // Screenspace x,y are in range [-1, 1]
+            // IGNORE BACK SIDE: Normalized Z in NDC is depth. 
+            // In Three.js projection, z is depth in range [0, 1] relative to camera (0=near, 1=far)? 
+            // Actually _v1.project returns NDC [-1, 1].
+            // We only want the front half (z < 0). 
+            if (_v1.z > 0.4) return; 
+
+            // Score based on distance to screen center (x,y) and HEAVY depth penalty
             const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);
-            const score = distToCenter + _v1.z * 0.5;
+            // Smaller score is better. Prioritize proximity to screen center and then depth.
+            const score = distToCenter + (_v1.z + 1) * 3.0; 
             
             if (score < minScore) {
               minScore = score;
@@ -313,13 +324,13 @@ export default function ChristmasTree() {
         });
         if (closestId) setFocusedId(closestId);
       }
-    } else if (lastGesture.current === 'pinch' && focusedId) {
-      // Automatic restore once pinch is released
-      setFocusedId(null);
+    } else if (lastGesture.current === 'grab' || lastGesture.current === 'pinch') {
+      // Automatic restore once released
+      if (focusedId) setFocusedId(null);
     }
     
-    // Handle Pinch on Tree phase - Random photo focus if none focused
-    if (phase === 'tree' && gesture === 'pinch' && !focusedId && photos.length > 0) {
+    // Handle Grab on Tree phase - Random photo focus if none focused
+    if (phase === 'tree' && isGrabTriggered && !focusedId && photos.length > 0) {
       const randomIdx = Math.floor(Math.random() * photos.length);
       setFocusedId(photos[randomIdx].id);
     }

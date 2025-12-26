@@ -209,11 +209,14 @@ export default function HandTracker() {
     setHandVelocityX(wrist.x - prevX);
     const xRange = Math.max(...waveBuffer.current) - Math.min(...waveBuffer.current);
 
+    const middleTip = landmarks[12];
+    const grabDist = (dist(thumbTip, indexTip) + dist(thumbTip, middleTip)) / (2 * palmSize);
+
     let rawDetected = 'none';
     if (xRange > 0.08 && extendedFingers >= 3) rawDetected = 'wave';
     else if (extendedFingers >= 3) rawDetected = 'open';
-    else if (extendedFingers <= 1) rawDetected = 'fist';
-    else if (dist(thumbTip, indexTip) / palmSize < 0.45) rawDetected = 'pinch';
+    else if (extendedFingers === 0) rawDetected = 'fist';
+    else if (grabDist < 0.6) rawDetected = 'grab';
 
     // Stability Buffer: Require 5 frames of consistency
     gestureBuffer.current.push(rawDetected);
@@ -221,14 +224,14 @@ export default function HandTracker() {
 
     const allMatch = gestureBuffer.current.every(g => g === rawDetected);
     const isWave = rawDetected === 'wave';
-    const { isKeyboardPinch } = useStore.getState();
+    const { isKeyboardGrab } = useStore.getState();
 
-    if (!isKeyboardPinch && (allMatch || (isWave && gestureBuffer.current.filter(g => g === 'wave').length >= 2))) {
+    if (!isKeyboardGrab && (allMatch || (isWave && gestureBuffer.current.filter(g => g === 'wave').length >= 2))) {
       setGesture(rawDetected);
       setDebugGesture(`${rawDetected} (${extendedFingers})`);
-    } else if (isKeyboardPinch) {
-      setGesture('pinch');
-      setDebugGesture('pinch (KEYBOARD)');
+    } else if (isKeyboardGrab) {
+      setGesture('grab');
+      setDebugGesture('grab (KEYBOARD)');
     }
   };
 
