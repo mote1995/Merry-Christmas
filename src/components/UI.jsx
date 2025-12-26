@@ -347,7 +347,7 @@ export default function UI() {
           <span className="text-[10px] sm:text-xs font-medium tracking-widest uppercase">Gesture: {gesture}</span>
         </div>
         <div className="text-[9px] sm:text-[10px] opacity-50 uppercase tracking-tighter">
-          Phase: {phase} | Sync: 05:35:00
+          Phase: {phase} | Sync: 05:52:00
         </div>
         {/* Hidden on very small screens or made smaller */}
         <div className="hidden sm:block mt-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-[10px] max-w-[240px]">

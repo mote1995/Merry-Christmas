@@ -305,10 +305,8 @@ export default function ChristmasTree() {
             child.getWorldPosition(_v1);
             _v1.project(state.camera);
             
-            // IGNORE BACK SIDE: Normalized Z in NDC is depth. 
-            // In Three.js projection, z is depth in range [-1, 1].
-            // We only want the front half (z < 0.4). 
-            if (_v1.z > 0.4) return; 
+            // IGNORE BACK SIDE: We only want the front half (z < 0.2). 
+            if (_v1.z > 0.2) return; 
 
             // Score based on distance to screen center (x,y) and HEAVY depth penalty
             const distToCenter = Math.sqrt(_v1.x ** 2 + _v1.y ** 2);

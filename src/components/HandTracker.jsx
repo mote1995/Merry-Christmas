@@ -209,16 +209,15 @@ export default function HandTracker() {
     setHandVelocityX(wrist.x - prevX);
     const xRange = Math.max(...waveBuffer.current) - Math.min(...waveBuffer.current);
 
-    const middleTip = landmarks[12];
-    const grabDist = (dist(thumbTip, indexTip) + dist(thumbTip, middleTip)) / (2 * palmSize);
-
     let rawDetected = 'none';
     if (xRange > 0.08 && extendedFingers >= 3) rawDetected = 'wave';
     else if (extendedFingers >= 3) rawDetected = 'open';
     else if (extendedFingers === 0) rawDetected = 'fist';
-    else if (extendedFingers === 1 && dist(landmarks[8], wrist) > dist(landmarks[6], wrist) * 1.1) {
-      // Only index finger extended significantly
-      rawDetected = 'point_up';
+    else if (extendedFingers === 1) {
+      // Point Up: Index finger tip must be significantly higher (lower Y) than all other landmarks
+      const otherTips = [4, 12, 16, 20];
+      const isPointUp = otherTips.every(idx => indexTip.y < landmarks[idx].y - 0.05);
+      if (isPointUp) rawDetected = 'point_up';
     }
 
     // Stability Buffer: Require 5 frames of consistency
