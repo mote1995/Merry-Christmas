@@ -195,24 +195,25 @@ export default function UI() {
   };
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-40 select-none">
+    <div className="absolute inset-x-0 inset-y-0 pointer-events-none z-40 select-none flex flex-col items-center justify-between p-4 sm:p-8">
       {/* Header Title */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 text-center">
-        <h1 className="text-6xl font-cursive text-transparent bg-clip-text bg-gradient-to-b from-vintage-gold to-yellow-200 drop-shadow-[0_0_15px_rgba(212,175,55,0.8)]">
+      <div className="w-full text-center mt-4 sm:mt-12">
+        <h1 className="text-4xl sm:text-6xl font-cursive text-transparent bg-clip-text bg-gradient-to-b from-vintage-gold to-yellow-200 drop-shadow-[0_0_15px_rgba(212,175,55,0.8)] px-4">
           Merry Christmas
         </h1>
       </div>
 
-      {/* Top Left Status */}
-      <div className="absolute top-8 left-8 text-white/70 space-y-1">
+      {/* Top Left Status / Guide - Repositioned for mobile */}
+      <div className="absolute top-4 left-4 sm:top-8 sm:left-8 text-white/70 space-y-1">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${gesture !== 'none' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
-          <span className="text-xs font-medium tracking-widest uppercase">Gesture: {gesture}</span>
+          <span className="text-[10px] sm:text-xs font-medium tracking-widest uppercase">Gesture: {gesture}</span>
         </div>
-        <div className="text-[10px] opacity-50 uppercase tracking-tighter">
+        <div className="text-[9px] sm:text-[10px] opacity-50 uppercase tracking-tighter">
           Phase: {phase}
         </div>
-        <div className="mt-4 p-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg text-[9px] max-w-[180px]">
+        {/* Hidden on very small screens or made smaller */}
+        <div className="hidden sm:block mt-4 p-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg text-[9px] max-w-[180px]">
            <p className="font-bold mb-1">GUIDE:</p>
            <p>• Open Palm (O): Bloom / Slow</p>
            <p>• Wave (A/D): Faster Rotate</p>
@@ -221,60 +222,58 @@ export default function UI() {
         </div>
       </div>
 
-      {/* Bottom Right Player */}
-      <div className="absolute bottom-8 right-8 pointer-events-auto">
-        {/* Hidden Audio Element */}
+      {/* Bottom Player - Centered and responsive on mobile */}
+      <div className="w-full max-w-md pointer-events-auto mb-4 sm:absolute sm:bottom-8 sm:right-8 sm:w-auto sm:mb-0">
         <audio ref={audioRef} src={bgmUrl} loop />
         
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 rounded-3xl flex items-center gap-4 shadow-2xl">
-          <div className="relative">
-            <div className={`w-12 h-12 bg-gradient-to-tr from-vintage-gold to-yellow-200 rounded-full flex items-center justify-center ${isPlaying ? 'animate-[spin_8s_linear_infinite]' : ''}`}>
-              <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-                <Music size={16} className="text-vintage-gold" />
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-3 sm:p-4 rounded-3xl flex flex-col sm:flex-row items-center gap-2 sm:gap-4 shadow-2xl">
+          <div className="flex items-center gap-4 w-full sm:w-auto">
+            <div className="relative shrink-0">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-tr from-vintage-gold to-yellow-200 rounded-full flex items-center justify-center ${isPlaying ? 'animate-[spin_8s_linear_infinite]' : ''}`}>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-full flex items-center justify-center">
+                  <Music size={14} className="text-vintage-gold" />
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-vintage-gold font-bold tracking-[0.2em]">NOW PLAYING</span>
-            <span className="text-sm font-semibold truncate w-40">{bgmName}</span>
-          </div>
-          <div className="flex gap-2 items-center">
-            {/* Play/Pause Toggle */}
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-[9px] text-vintage-gold font-bold tracking-[0.2em] uppercase">Now Playing</span>
+              <span className="text-xs sm:text-sm font-semibold truncate max-w-[150px] sm:w-40">{bgmName}</span>
+            </div>
             <button 
               onClick={togglePlay}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors group"
-              title={isPlaying ? "Pause" : "Play"}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors group shrink-0"
             >
               {isPlaying ? (
-                <Pause size={20} className="text-vintage-gold group-active:scale-95 transition-transform" />
+                <Pause size={18} className="text-vintage-gold" />
               ) : (
-                <Play size={20} className="text-white group-active:scale-95 transition-transform" />
+                <Play size={18} className="text-white" />
               )}
             </button>
-            
-            <label className="p-2 hover:bg-white/10 rounded-full cursor-pointer transition-colors">
+          </div>
+
+          <div className="flex items-center justify-between w-full sm:w-auto border-t border-white/10 pt-2 sm:pt-0 sm:border-t-0 gap-1">
+            <label className="flex-1 sm:flex-none py-1.5 px-2 hover:bg-white/10 rounded-xl cursor-pointer transition-colors text-center">
               <input type="file" className="hidden" onChange={handleMusicUpload} accept="audio/*" />
-              <span className="text-xs font-bold text-vintage-gold">Music</span>
+              <span className="text-[10px] sm:text-xs font-bold text-vintage-gold uppercase tracking-wider">Music</span>
             </label>
-            <label className="p-2 hover:bg-white/10 rounded-full cursor-pointer transition-colors">
+            <label className="flex-1 sm:flex-none py-1.5 px-2 hover:bg-white/10 rounded-xl cursor-pointer transition-colors text-center">
               <input type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" multiple />
-              <span className="text-xs font-bold text-vintage-gold">Memory</span>
+              <span className="text-[10px] sm:text-xs font-bold text-vintage-gold uppercase tracking-wider">Memory</span>
             </label>
-            <div className="flex gap-1 items-center">
+            <div className="flex gap-0.5 items-center">
               <button 
                 onClick={handleShare}
                 disabled={isSharing}
-                className={`p-2 hover:bg-white/10 rounded-full transition-colors flex items-center gap-1 ${isSharing ? 'opacity-50' : ''}`}
+                className={`py-1.5 px-2 hover:bg-white/10 rounded-xl transition-colors flex items-center gap-1 ${isSharing ? 'opacity-50' : ''}`}
               >
-                <Share2 size={16} className="text-vintage-gold" />
-                <span className="text-xs font-bold text-vintage-gold">{isSharing ? 'Saving...' : 'Share'}</span>
+                <Share2 size={14} className="text-vintage-gold" />
+                <span className="text-[10px] sm:text-xs font-bold text-vintage-gold uppercase tracking-wider">{isSharing ? '...' : 'Share'}</span>
               </button>
               <button 
                 onClick={handleImport}
-                title="Import Memory File"
-                className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center opacity-60 hover:opacity-100"
+                className="p-2 hover:bg-white/10 rounded-full transition-colors opacity-60 hover:opacity-100"
               >
-                <Upload size={16} className="text-vintage-gold" />
+                <Upload size={14} className="text-vintage-gold" />
               </button>
             </div>
           </div>

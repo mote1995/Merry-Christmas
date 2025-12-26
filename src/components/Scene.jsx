@@ -11,17 +11,33 @@ import {
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import ChristmasTree from './ChristmasTree';
 import useStore from '../store';
+import { useThree } from '@react-three/fiber';
+
+function AdaptiveCamera() {
+  const { viewport } = useThree();
+  const isPortrait = viewport.aspect < 1;
+  const fov = isPortrait ? 60 : 45;
+  const zPosition = isPortrait ? 25 : 20;
+
+  return (
+    <PerspectiveCamera 
+      makeDefault 
+      position={[0, 0, zPosition]} 
+      fov={fov} 
+    />
+  );
+}
 
 export default function Scene() {
   const phase = useStore((state) => state.phase);
 
   return (
     <div className="w-full h-full bg-black">
-      <Canvas shadows dpr={[1, 2]}>
+      <Canvas shadows dpr={[1, 2]} camera={{ fov: 45, position: [0, 0, 20] }}>
         <color attach="background" args={['#000']} />
         
         <Suspense fallback={null}>
-          <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={45} />
+          <AdaptiveCamera />
           <OrbitControls 
             enablePan={false} 
             maxDistance={40} 
