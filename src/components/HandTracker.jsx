@@ -47,35 +47,15 @@ export default function HandTracker() {
     initMP();
   }, []);
 
-  useEffect(() => {
-    if (isCameraOpen && videoRef.current) {
-      navigator.mediaDevices.getUserMedia({ 
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } 
-      }).then((stream) => {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadeddata = () => {
-          videoRef.current.play();
-          predictWebcam();
-        };
-      }).catch(err => {
-        console.error("Camera Access Error:", err);
-        alert("Please allow camera access to use hand gestures.");
-        toggleCamera();
-      });
-    } else if (!isCameraOpen && videoRef.current && videoRef.current.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-  }, [isCameraOpen]);
+  const lastVideoTime = useRef(-1);
+  const requestRef = useRef();
 
-  let lastVideoTime = -1;
   const predictWebcam = () => {
     if (!videoRef.current || !landmarker || !canvasRef.current || !isCameraOpen) return;
     
     let nowInMs = Date.now();
-    if (videoRef.current.currentTime !== lastVideoTime && videoRef.current.readyState >= 2) {
-      lastVideoTime = videoRef.current.currentTime;
+    if (videoRef.current.currentTime !== lastVideoTime.current && videoRef.current.readyState >= 2) {
+      lastVideoTime.current = videoRef.current.currentTime;
       const results = landmarker.detectForVideo(videoRef.current, nowInMs);
       
       const ctx = canvasRef.current.getContext('2d');
@@ -95,8 +75,38 @@ export default function HandTracker() {
       }
     }
     
-    window.requestAnimationFrame(predictWebcam);
+    requestRef.current = window.requestAnimationFrame(predictWebcam);
   };
+
+  useEffect(() => {
+    if (isCameraOpen && landmarker && videoRef.current) {
+      predictWebcam();
+    }
+    return () => {
+      if (requestRef.current) window.cancelAnimationFrame(requestRef.current);
+    };
+  }, [isCameraOpen, landmarker]);
+
+  useEffect(() => {
+    if (isCameraOpen && videoRef.current) {
+      navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } 
+      }).then((stream) => {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadeddata = () => {
+          videoRef.current.play();
+        };
+      }).catch(err => {
+        console.error("Camera Access Error:", err);
+        alert("Please allow camera access to use hand gestures.");
+        toggleCamera();
+      });
+    } else if (!isCameraOpen && videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  }, [isCameraOpen]);
 
   const drawHand = (ctx, landmarks) => {
     const w = canvasRef.current.width;
@@ -186,8 +196,8 @@ export default function HandTracker() {
   };
 
   return (
-    <div className="absolute bottom-64 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-40 z-50">
-      <div className={`relative w-48 h-36 bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/20 transition-all ${isCameraOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    <div className="absolute top-4 right-4 z-50">
+      <div className={`relative w-40 h-30 sm:w-48 sm:h-36 bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/20 transition-all ${isCameraOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <video 
           ref={videoRef} 
           autoPlay 

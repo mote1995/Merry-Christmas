@@ -93,23 +93,25 @@ export default function ChristmasTree() {
           duration: 2,
           ease: 'expo.out'
         }, 0);
-        
-        // Color transition for particles
-        const targetColor = new THREE.Color(i % 2 === 0 ? '#D4AF37' : '#00ffcc');
-        const currentColor = new THREE.Color('#2d5a27');
-        tl.to(currentColor, {
-          r: targetColor.r,
-          g: targetColor.g,
-          b: targetColor.b,
-          duration: 1.5,
-          onUpdate: () => {
-            if (particlesRef.current) {
-               particlesRef.current.setColorAt(i, currentColor);
-               particlesRef.current.instanceColor.needsUpdate = true;
-            }
-          }
-        }, 0.5);
       });
+
+      // Efficient color transition for all particles
+      const colorProgress = { t: 0 };
+      tl.to(colorProgress, {
+        t: 1,
+        duration: 1.5,
+        onUpdate: () => {
+          if (!particlesRef.current) return;
+          const tempColor = new THREE.Color();
+          const startCol = new THREE.Color('#2d5a27');
+          for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const targetCol = new THREE.Color(i % 2 === 0 ? '#D4AF37' : '#00ffcc');
+            tempColor.copy(startCol).lerp(targetCol, colorProgress.t);
+            particlesRef.current.setColorAt(i, tempColor);
+          }
+          particlesRef.current.instanceColor.needsUpdate = true;
+        }
+      }, 0.5);
 
       // Animate ornaments to nebula outer ring
       ornamentPositions.forEach((pos, i) => {
@@ -153,23 +155,25 @@ export default function ChristmasTree() {
           duration: 1.5,
           ease: 'power3.inOut'
         }, 0);
-
-        // Color transition back to green
-        const targetColor = new THREE.Color('#2d5a27');
-        const startColor = new THREE.Color(i % 2 === 0 ? '#D4AF37' : '#00ffcc');
-        tl.to(startColor, {
-          r: targetColor.r,
-          g: targetColor.g,
-          b: targetColor.b,
-          duration: 1.2,
-          onUpdate: () => {
-            if (particlesRef.current) {
-               particlesRef.current.setColorAt(i, startColor);
-               particlesRef.current.instanceColor.needsUpdate = true;
-            }
-          }
-        }, 0.2);
       });
+
+      // Efficient color transition back to green
+      const colorProgress = { t: 0 };
+      tl.to(colorProgress, {
+        t: 1,
+        duration: 1.2,
+        onUpdate: () => {
+          if (!particlesRef.current) return;
+          const tempColor = new THREE.Color();
+          const targetCol = new THREE.Color('#2d5a27');
+          for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const startCol = new THREE.Color(i % 2 === 0 ? '#D4AF37' : '#00ffcc');
+            tempColor.copy(startCol).lerp(targetCol, colorProgress.t);
+            particlesRef.current.setColorAt(i, tempColor);
+          }
+          particlesRef.current.instanceColor.needsUpdate = true;
+        }
+      }, 0.2);
 
       ornamentPositions.forEach((pos, i) => {
         tl.to(pos, {
