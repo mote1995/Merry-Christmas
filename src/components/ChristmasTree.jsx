@@ -49,7 +49,8 @@ export default function ChristmasTree() {
     // Phase logic based on gesture
     if (phase === 'tree' && gesture === 'open') {
       setPhase('blooming');
-    } else if (phase === 'nebula' && gesture === 'fist') {
+    } else if (phase !== 'tree' && phase !== 'collapsing' && gesture === 'fist') {
+      // Global reset: any active phase (blooming/nebula) -> collapse back to tree
       setPhase('collapsing');
     }
   }, [gesture, phase]);

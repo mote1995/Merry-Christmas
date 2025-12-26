@@ -173,7 +173,7 @@ export default function HandTracker() {
   };
 
   return (
-    <div className="absolute top-4 right-4 z-50">
+    <div className="absolute bottom-64 right-8 z-50 sm:bottom-64">
       <div className={`relative w-48 h-36 bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/20 transition-all ${isCameraOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <video 
           ref={videoRef} 
