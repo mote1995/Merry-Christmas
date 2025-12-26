@@ -8,9 +8,8 @@ const SERVICES = [
 import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Share2, Upload } from 'lucide-react';
 
 export default function UI() {
-  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture } = useStore();
+  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted } = useStore();
   const [isSharing, setIsSharing] = React.useState(false);
-  const [hasStarted, setHasStarted] = React.useState(false);
   const audioRef = React.useRef(null);
 
   const handleMusicUpload = (e) => {
@@ -217,12 +216,20 @@ export default function UI() {
   return (
     <>
       {/* Start Overlay */}
-      {!hasStarted && (
-        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-2xl transition-all duration-700">
-          <div className="text-center p-8 rounded-3xl border border-white/20 bg-white/5 shadow-2xl animate-in fade-in zoom-in duration-500">
-            <h2 className="text-5xl sm:text-7xl font-cursive text-transparent bg-clip-text bg-gradient-to-b from-vintage-gold to-yellow-200 drop-shadow-[0_0_20px_rgba(212,175,55,0.6)] mb-8">
+      {/* Start Overlay with Envelope Effect */}
+      <div className={`fixed inset-0 z-[100] transition-all duration-1000 pointer-events-none ${hasStarted ? 'opacity-0 delay-500' : 'opacity-100'}`}>
+        {/* Top Half */}
+        <div className={`absolute top-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-b border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-end justify-center pb-12 z-20 ${hasStarted ? '-translate-y-full' : 'translate-y-0'}`}>
+          <div className={`transition-opacity duration-500 ${hasStarted ? 'opacity-0' : 'opacity-100 delay-300'}`}>
+             <h2 className="text-5xl sm:text-7xl font-cursive text-transparent bg-clip-text bg-gradient-to-b from-vintage-gold to-yellow-200 drop-shadow-[0_0_20px_rgba(212,175,55,0.6)]">
               Merry Christmas
             </h2>
+          </div>
+        </div>
+        
+        {/* Bottom Half */}
+        <div className={`absolute bottom-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-t border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-start justify-center pt-12 z-20 ${hasStarted ? 'translate-y-full' : 'translate-y-0'}`}>
+          <div className={`pointer-events-auto transition-opacity duration-500 flex flex-col items-center gap-6 ${hasStarted ? 'opacity-0' : 'opacity-100 delay-300'}`}>
             <button
               onClick={handleStart}
               className="group relative px-12 py-5 bg-gradient-to-r from-vintage-gold to-yellow-500 rounded-full text-black font-bold text-xl transition-all hover:scale-110 active:scale-95 shadow-[0_0_30px_rgba(212,175,55,0.4)]"
@@ -234,10 +241,10 @@ export default function UI() {
                 <span>Start Experience</span>
               </div>
             </button>
-            <p className="mt-8 text-white/40 text-xs tracking-widest uppercase">Tap to Begin the Festive Magic</p>
+            <p className="text-white/40 text-xs tracking-widest uppercase">Tap to Open Your gift</p>
           </div>
         </div>
-      )}
+      </div>
 
       <div className={`absolute inset-x-0 inset-y-0 pointer-events-none z-40 select-none flex flex-col items-center justify-between p-4 sm:p-8 transition-opacity duration-1000 ${hasStarted ? 'opacity-100' : 'opacity-0'}`}>
       {/* Header Title */}
@@ -257,12 +264,14 @@ export default function UI() {
           Phase: {phase}
         </div>
         {/* Hidden on very small screens or made smaller */}
-        <div className="hidden sm:block mt-4 p-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg text-[9px] max-w-[180px]">
-           <p className="font-bold mb-1">GUIDE:</p>
-           <p>• Open Palm (O): Bloom / Slow</p>
-           <p>• Wave (A/D): Faster Rotate</p>
-           <p>• Closed Fist (F): Reset Tree</p>
-           <p>• Pinch (P): Focus Photo</p>
+        <div className="hidden sm:block mt-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-xs max-w-[220px]">
+           <p className="font-bold mb-2 text-vintage-gold tracking-widest">INTERACTION GUIDE:</p>
+           <ul className="space-y-1.5 opacity-90">
+             <li>• <span className="text-white font-semibold">Open Palm (O)</span>: Bloom / Slow</li>
+             <li>• <span className="text-white font-semibold">Wave (A/D)</span>: Faster Rotate</li>
+             <li>• <span className="text-white font-semibold">Closed Fist (F)</span>: Reset Tree</li>
+             <li>• <span className="text-white font-semibold">Pinch (P)</span>: Focus Photo</li>
+           </ul>
         </div>
       </div>
 
@@ -295,34 +304,48 @@ export default function UI() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between w-full sm:w-auto border-t border-white/10 pt-2 sm:pt-0 sm:border-t-0 gap-1">
-            <label className="flex-1 sm:flex-none py-1.5 px-2 hover:bg-white/10 rounded-xl cursor-pointer transition-colors text-center">
+          </div>
+          
+          <div className="h-8 w-px bg-white/10 hidden sm:block"></div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t border-white/10 sm:border-t-0 justify-center">
+            <label className="flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl cursor-pointer transition-colors group">
               <input type="file" className="hidden" onChange={handleMusicUpload} accept="audio/*" />
-              <span className="text-[10px] sm:text-xs font-bold text-vintage-gold uppercase tracking-wider">Music</span>
-            </label>
-            <label className="flex-1 sm:flex-none py-1.5 px-2 hover:bg-white/10 rounded-xl cursor-pointer transition-colors text-center">
-              <input type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" multiple />
-              <span className="text-[10px] sm:text-xs font-bold text-vintage-gold uppercase tracking-wider">Memory</span>
-            </label>
-            <div className="flex gap-0.5 items-center">
-              <button 
-                onClick={handleShare}
-                disabled={isSharing}
-                className={`py-1.5 px-2 hover:bg-white/10 rounded-xl transition-colors flex items-center gap-1 ${isSharing ? 'opacity-50' : ''}`}
-              >
-                <Share2 size={14} className="text-vintage-gold" />
-                <span className="text-[10px] sm:text-xs font-bold text-vintage-gold uppercase tracking-wider">{isSharing ? '...' : 'Share'}</span>
-              </button>
-              <button 
-                onClick={handleImport}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors opacity-60 hover:opacity-100"
-              >
+              <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
                 <Upload size={14} className="text-vintage-gold" />
+              </div>
+              <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">Music</span>
+            </label>
+            
+            <label className="flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl cursor-pointer transition-colors group">
+              <input type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" multiple />
+              <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
+                <ImageIcon size={14} className="text-vintage-gold" />
+              </div>
+              <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">Memory</span>
+            </label>
+
+            <button 
+              onClick={handleShare}
+              disabled={isSharing}
+              className={`flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl transition-colors group ${isSharing ? 'opacity-50' : ''}`}
+            >
+              <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
+                <Share2 size={14} className="text-vintage-gold" />
+              </div>
+              <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">{isSharing ? '...' : 'Share'}</span>
+            </button>
+            <button 
+                onClick={handleImport}
+                className="flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl transition-colors group"
+              >
+                <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
+                   <Upload size={14} className="text-vintage-gold rotate-180" />
+                </div>
+                <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">Import</span>
               </button>
-            </div>
           </div>
         </div>
-      </div>
       </div>
     </>
   );

@@ -43,6 +43,10 @@ const useStore = create((set) => ({
   rotation: 0,
   setRotation: (val) => set({ rotation: val }),
   
+  // Experience Start State
+  hasStarted: false,
+  setHasStarted: (val) => set({ hasStarted: val }),
+
   // Focused photo ID
   focusedId: null,
   setFocusedId: (id) => set({ focusedId: id }),

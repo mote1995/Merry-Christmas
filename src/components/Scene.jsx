@@ -1,4 +1,5 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useRef } from 'react';
+import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { 
   OrbitControls, 
@@ -11,7 +12,8 @@ import {
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import ChristmasTree from './ChristmasTree';
 import useStore from '../store';
-import { useThree } from '@react-three/fiber';
+import useStore from '../store';
+import { useThree, useFrame } from '@react-three/fiber';
 
 function AdaptiveCamera() {
   const { viewport } = useThree();
@@ -30,6 +32,16 @@ function AdaptiveCamera() {
 
 export default function Scene() {
   const phase = useStore((state) => state.phase);
+  const { hasStarted } = useStore();
+  const groupRef = useRef();
+
+  useFrame((state, delta) => {
+    if (groupRef.current) {
+      // Move tree from y=2.0 down to y=0.0 when started
+      const targetY = hasStarted ? 0.0 : 2.0;
+      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, delta * 1.5);
+    }
+  });
 
   return (
     <div className="w-full h-full bg-black">
@@ -66,7 +78,9 @@ export default function Scene() {
           <Environment preset="city" />
 
           {/* 3D Content */}
-          <ChristmasTree />
+          <group ref={groupRef} position={[0, 2, 0]}>
+            <ChristmasTree />
+          </group>
 
           {/* Post Processing */}
           <EffectComposer disableNormalPass>
