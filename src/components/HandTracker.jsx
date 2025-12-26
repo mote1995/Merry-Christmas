@@ -163,8 +163,8 @@ export default function HandTracker() {
     const xRange = Math.max(...waveBuffer.current) - Math.min(...waveBuffer.current);
 
     let detected = 'none';
-    if (xRange > 0.08 && extendedFingers >= 4) detected = 'wave';
-    else if (extendedFingers >= 4) detected = 'open';
+    if (xRange > 0.08 && extendedFingers >= 3) detected = 'wave';
+    else if (extendedFingers >= 3) detected = 'open';
     else if (extendedFingers <= 1) detected = 'fist';
     else if (dist(thumbTip, indexTip) / palmSize < 0.35) detected = 'pinch';
     
