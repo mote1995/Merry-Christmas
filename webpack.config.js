@@ -1,6 +1,7 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const HTMLInlineScriptWebpackPlugin = require("html-inline-script-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
   entry: "./src/index.js",
@@ -36,6 +37,15 @@ module.exports = {
       inject: "body",
     }),
     new HTMLInlineScriptWebpackPlugin(),
+    new CopyWebpackPlugin({
+      patterns: [
+        { 
+          from: "public",
+          to: "",
+          filter: (resourcePath) => !resourcePath.endsWith("index.html")
+        },
+      ],
+    }),
   ],
   resolve: {
     extensions: [".js", ".jsx"],
