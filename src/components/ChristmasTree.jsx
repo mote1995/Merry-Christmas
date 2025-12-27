@@ -293,20 +293,24 @@ export default function ChristmasTree() {
       }
     }
 
-    // Handle Point Up Focus Selection - RANDOM (Unified for Tree & Blooming)
+    // Unified Point-Up Selection with 30-frame debounce
     const isPointUp = gesture === 'point_up';
     if (isPointUp) {
       if (!focusedId && photos.length > 0) {
         const randomIdx = Math.floor(Math.random() * photos.length);
         const selectedId = photos[randomIdx].id;
-        console.log(`[Focus] Random Selection Triggered: ${selectedId}`);
+        console.log(`[Focus] Random Selection: ${selectedId}`);
         setFocusedId(selectedId);
+        releaseCount.current = 0;
+      } else {
+        releaseCount.current = 0; // Reset while active
       }
-    } else if (lastGesture.current === 'point_up' || lastGesture.current === 'grab' || lastGesture.current === 'pinch') {
-      // Automatic restore once released
-      if (focusedId) {
-        console.log("Point-Up Focus Released");
+    } else if (focusedId) {
+      // Release only after 30 frames of non-pointing
+      releaseCount.current++;
+      if (releaseCount.current > 30) {
         setFocusedId(null);
+        releaseCount.current = 0;
       }
     }
 
