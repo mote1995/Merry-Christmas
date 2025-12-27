@@ -285,8 +285,10 @@ export default function ChristmasTree() {
       photoGroupRef.current.position.set(0, 0, 0);
 
       const baseRotation = phase === 'blooming' ? 0.1 : 0;
-      // Stop rotation if a photo is focused to prevent jitter/shaking
-      if (!focusedId) {
+      // Stop rotation AND velocity drift if a photo is focused to prevent jitter
+      if (focusedId) {
+        rotationVelocity.current = 0; // Hard kill current momentum
+      } else {
         ringRef.current.rotation.y += (baseRotation + rotationVelocity.current) * delta;
       }
     }
@@ -411,29 +413,31 @@ function SmartPhoto({ photo, index, total }) {
 
   useFrame((state) => {
     if (isFocused) {
-      // Ensure parent matrix is fresh before world-to-local conversion
+      // 1. FORCE PARENT SYNC
       meshRef.current.parent.updateMatrixWorld();
       
-      // MAGNETIC FOCUS MODE: Moves to absolute center of screen
-      // Calculate a point directly in front of camera
-      const dist = 8; // Slightly further for better clarity and comfortable margin
+      // 2. CALCULATE TARGET IN WORLD SPACE
+      const dist = 8;
+      // We project the point relative to the camera
       _v1.set(0, 0, -dist).applyQuaternion(state.camera.quaternion).add(state.camera.position);
       
-      // Convert world target to local parent coordinates
+      // 3. LOCK POSITION IN WORLD SPACE THEN CONVERT
+      // This ensures even if the parent moves, the photo pursues the world-point exactly
       const targetLocal = meshRef.current.parent.worldToLocal(_v1.clone());
-      meshRef.current.position.lerp(targetLocal, 0.3); // snappier magnet effect
+      meshRef.current.position.lerp(targetLocal, 0.3);
       
-      // Positive View Lock: lookAt camera with world-up orientation
+      // 4. LOCK ORIENTATION
       const parentWorldQuat = new THREE.Quaternion();
       meshRef.current.parent.getWorldQuaternion(parentWorldQuat);
       const localFaceQuat = state.camera.quaternion.clone().multiply(parentWorldQuat.invert());
       meshRef.current.quaternion.slerp(localFaceQuat, 0.3);
       
-      // Scale: Target 70% screen height as requested
+      // 5. STABLE SCALE
       const vFOV = (state.camera.fov * Math.PI) / 180;
       const visibleHeight = 2 * Math.tan(vFOV / 2) * dist;
       const targetScale = visibleHeight * 0.7; 
-      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, 1), 0.3);
+      _s1.set(targetScale, targetScale, 1);
+      meshRef.current.scale.lerp(_s1, 0.3);
       
     } else {
       meshRef.current.position.lerp(targetPos, 0.05);
