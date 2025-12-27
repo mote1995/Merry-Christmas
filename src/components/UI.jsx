@@ -277,7 +277,7 @@ export default function UI() {
         return { ...p, url: base64 };
       }));
 
-      // 2. Serialize BGM (Force Base64 even for default paths to ensure standalone works offline)
+      // 2. Serialize BGM
       let serializedBgmUrl = bgmUrl;
       if (bgmUrl && (bgmUrl.startsWith('blob:') || !bgmUrl.startsWith('http'))) {
         try {
@@ -293,42 +293,100 @@ export default function UI() {
         bgmUrl: serializedBgmUrl
       };
 
-      // 3. Get Source HTML and Inject
+      // 3. Get Source HTML and ENHANCE IT
       let html = "";
       try {
-        // Fetch the actual source file to get a "clean" template with DOCTYPE
-        const response = await fetch(window.location.href);
+        // Fetch base HTML (avoiding query params)
+        const baseUrl = window.location.origin + window.location.pathname;
+        const response = await fetch(baseUrl);
         html = await response.text();
       } catch (e) {
-        // Fallback to current DOM if fetch fails
+        // Ultimate fallback
         html = document.documentElement.outerHTML;
         if (!html.startsWith('<!DOCTYPE')) html = '<!DOCTYPE html>\n' + html;
       }
       
-      // Clean up any existing memory scripts to avoid conflicts
+      // 4. INLINE SCRIPTS (Crucial for dev environment or non-inlined production)
+      const scripts = Array.from(document.querySelectorAll('script[src]'));
+      for (const s of scripts) {
+        const src = s.getAttribute('src');
+        if (src && !src.startsWith('http')) {
+          try {
+            const res = await fetch(src);
+            const content = await res.text();
+            // Replace the external script tag with inlined content
+            // We use a broader regex to match both defer/async and standard scripts
+            const tagRegex = new RegExp(`<script[^>]*src=["']${src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>\\s*</script>`, 'g');
+            html = html.replace(tagRegex, `<script>${content}</script>`);
+          } catch (e) {
+            console.warn(`Failed to inline script: ${src}`, e);
+          }
+        }
+      }
+
+      // 5. INLINE CSS (Style-loader usually handles this, but index.css might be external)
+      const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+      for (const l of links) {
+        const href = l.getAttribute('href');
+        if (href && !href.startsWith('http')) {
+          try {
+            const res = await fetch(href);
+            const content = await res.text();
+            const tagRegex = new RegExp(`<link[^>]*href=["']${href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>`, 'g');
+            html = html.replace(tagRegex, `<style>${content}</style>`);
+          } catch (e) {
+            console.warn(`Failed to inline style: ${href}`, e);
+          }
+        }
+      }
+
+      // Clean up previous memory
       html = html.replace(/<script id="festive-memory-data">[\s\S]*?<\/script>/g, "");
       
-      const dataScript = `<script id="festive-memory-data">window.__FESTIVE_MEMORY__ = ${JSON.stringify(memoryData)};</script>`;
+      const dataScript = `
+<script id="festive-memory-data">
+  window.__FESTIVE_MEMORY__ = ${JSON.stringify(memoryData)};
+  // Initialization protection
+  window.addEventListener('error', function(e) {
+    if (e.message && e.message.includes('Script error')) {
+      alert("Note: To view your festive memory, please ensure you are connected to the internet to load MediaPipe gesture assets!");
+    }
+  });
+</script>`;
       
-      // Insert Data Script
+      // Inject Data and Hydration Hook
       if (html.includes('</head>')) {
         html = html.replace('</head>', `${dataScript}</head>`);
-      } else if (html.includes('<head>')) {
-        html = html.replace('<head>', `<head>${dataScript}`);
       } else {
         html = html.replace('<body>', `<body>${dataScript}`);
       }
 
-      // 4. Download
+      // Add a Loading Guard (Will be removed by React once App mounts)
+      if (!html.includes('id="export-loading"')) {
+        const loadingGuard = `
+<div id="export-loading" style="position:fixed;inset:0;background:black;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#D4AF37;font-family:serif;">
+  <div style="font-size:24px;margin-bottom:20px;letter-spacing:4px;">PREPARING YOUR GIFT...</div>
+  <div style="width:100px;height:2px;background:linear-gradient(to right, transparent, #D4AF37, transparent);animation:sweep 2s infinite;"></div>
+  <style>@keyframes sweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }</style>
+</div>`;
+        html = html.replace('<div id="root"></div>', `<div id="root"></div>${loadingGuard}`);
+      }
+
+      // 6. Download
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
+      a.style.display = 'none';
       a.href = url;
-      a.download = `Merry_Christmas_${bgmName || 'Memory'}.html`;
+      a.download = `Merry_Christmas_${bgmName || 'Standalone'}.html`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
       
-      alert("Standalone HTML Generated! 🎁 You can now share this file directly.");
+      alert("Standalone HTML Generated! 🎁 This file contains your photos and music, and can be shared directly.");
     } catch (err) {
       console.error(err);
       alert("Export failed: " + err.message);
