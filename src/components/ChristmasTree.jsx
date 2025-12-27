@@ -285,11 +285,10 @@ export default function ChristmasTree() {
       photoGroupRef.current.position.set(0, 0, 0);
 
       const baseRotation = phase === 'blooming' ? 0.1 : 0;
-      // Global spin affects everything
-      ringRef.current.rotation.y += (baseRotation + rotationVelocity.current) * delta;
-      
-      // If focused, we might want to dampen rotation or handle it specifically,
-      // but the user wants the tree to spin.
+      // Stop rotation if a photo is focused to prevent jitter/shaking
+      if (!focusedId) {
+        ringRef.current.rotation.y += (baseRotation + rotationVelocity.current) * delta;
+      }
     }
 
     // Unified Point-Up Selection with 30-frame debounce
@@ -412,6 +411,9 @@ function SmartPhoto({ photo, index, total }) {
 
   useFrame((state) => {
     if (isFocused) {
+      // Ensure parent matrix is fresh before world-to-local conversion
+      meshRef.current.parent.updateMatrixWorld();
+      
       // MAGNETIC FOCUS MODE: Moves to absolute center of screen
       // Calculate a point directly in front of camera
       const dist = 8; // Slightly further for better clarity and comfortable margin
