@@ -117,6 +117,7 @@ export default function ChristmasTree() {
   const releaseCount = useRef(0);
   const lastGesture = useRef('none');
   const rotationVelocity = useRef(0);
+  const keysPressed = useRef(new Set());
   const isDragging = useRef(false);
   const lastMouseX = useRef(0);
   const lastMoveTime = useRef(0);
@@ -167,15 +168,15 @@ export default function ChristmasTree() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       const key = e.key.toLowerCase();
+      keysPressed.current.add(key);
       if (key === 'o') setPhase('blooming');
       if (key === 'f') setPhase('tree');
-      if (key === 'a') rotationVelocity.current -= 10;
-      if (key === 'd') rotationVelocity.current += 10;
       if (key === 'p') setKeyboardGrab(true);
     };
 
     const handleKeyUp = (e) => {
       const key = e.key.toLowerCase();
+      keysPressed.current.delete(key);
       if (key === 'p') setKeyboardGrab(false);
     };
 
@@ -191,8 +192,12 @@ export default function ChristmasTree() {
     const { mouse, clock } = state;
     const mousePos = new THREE.Vector3(mouse.x * 10, mouse.y * 10, 0);
 
+    // Keyboard Input
+    if (keysPressed.current.has('a')) rotationVelocity.current -= 1.5;
+    if (keysPressed.current.has('d')) rotationVelocity.current += 1.5;
+
     // Apply Friction / Decay
-    if (!isDragging.current && gesture !== 'wave') {
+    if (!isDragging.current && gesture !== 'wave' && !keysPressed.current.has('a') && !keysPressed.current.has('d')) {
       rotationVelocity.current *= 0.96; // Slow down gradually
     }
 
@@ -279,18 +284,12 @@ export default function ChristmasTree() {
       ringRef.current.position.set(0, 0, 0);
       photoGroupRef.current.position.set(0, 0, 0);
 
-      if (phase === 'blooming' && !focusedId && gesture !== 'point_up') {
-        // Constant slow rotation for everything
-        const baseRotation = 0.1;
-        ringRef.current.rotation.y += baseRotation * delta;
-        photoGroupRef.current.rotation.y += baseRotation * delta;
-
-        // Wave only affects photos
-        photoGroupRef.current.rotation.y += rotationVelocity.current * delta;
-      } else if (phase === 'tree') {
-        ringRef.current.rotation.y = THREE.MathUtils.lerp(ringRef.current.rotation.y, 0, 0.1);
-        photoGroupRef.current.rotation.y = THREE.MathUtils.lerp(photoGroupRef.current.rotation.y, 0, 0.1);
-      }
+      const baseRotation = phase === 'blooming' ? 0.1 : 0;
+      // Global spin affects everything
+      ringRef.current.rotation.y += (baseRotation + rotationVelocity.current) * delta;
+      
+      // If focused, we might want to dampen rotation or handle it specifically,
+      // but the user wants the tree to spin.
     }
 
     // Unified Point-Up Selection with 30-frame debounce
