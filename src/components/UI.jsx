@@ -306,39 +306,29 @@ export default function UI() {
         if (!html.startsWith('<!DOCTYPE')) html = '<!DOCTYPE html>\n' + html;
       }
       
-      // 4. INLINE SCRIPTS (Crucial for dev environment or non-inlined production)
-      const scripts = Array.from(document.querySelectorAll('script[src]'));
-      for (const s of scripts) {
-        const src = s.getAttribute('src');
-        if (src && !src.startsWith('http')) {
-          try {
-            const res = await fetch(src);
-            const content = await res.text();
-            // Replace the external script tag with inlined content
-            // We use a broader regex to match both defer/async and standard scripts
-            const tagRegex = new RegExp(`<script[^>]*src=["']${src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>\\s*</script>`, 'g');
-            html = html.replace(tagRegex, `<script>${content}</script>`);
-          } catch (e) {
-            console.warn(`Failed to inline script: ${src}`, e);
+      // 4. INLINE ASSETS (Robust fetching)
+      const fetchAndInline = async (selector, attr, tagOpen, tagClose) => {
+        const elements = Array.from(document.querySelectorAll(selector));
+        for (const el of elements) {
+          const val = el.getAttribute(attr);
+          if (val && !val.startsWith('http') && !val.includes('//')) {
+            try {
+              const res = await fetch(val);
+              const content = await res.text();
+              // Replace the original tag with inlined one
+              // We use a safe identifier search
+              const escapedVal = val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const regex = new RegExp(`<${el.tagName.toLowerCase()}[^>]*${attr}=["']${escapedVal}["'][^>]*>(?:\\s*</${el.tagName.toLowerCase()}>)?`, 'i');
+              html = html.replace(regex, `${tagOpen}${content}${tagClose}`);
+            } catch (e) {
+              console.warn(`Failed to inline ${val}`, e);
+            }
           }
         }
-      }
+      };
 
-      // 5. INLINE CSS (Style-loader usually handles this, but index.css might be external)
-      const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
-      for (const l of links) {
-        const href = l.getAttribute('href');
-        if (href && !href.startsWith('http')) {
-          try {
-            const res = await fetch(href);
-            const content = await res.text();
-            const tagRegex = new RegExp(`<link[^>]*href=["']${href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>`, 'g');
-            html = html.replace(tagRegex, `<style>${content}</style>`);
-          } catch (e) {
-            console.warn(`Failed to inline style: ${href}`, e);
-          }
-        }
-      }
+      await fetchAndInline('script[src]', 'src', '<script>', '</script>');
+      await fetchAndInline('link[rel="stylesheet"]', 'href', '<style>', '</style>');
 
       // Clean up previous memory
       html = html.replace(/<script id="festive-memory-data">[\s\S]*?<\/script>/g, "");
@@ -346,10 +336,18 @@ export default function UI() {
       const dataScript = `
 <script id="festive-memory-data">
   window.__FESTIVE_MEMORY__ = ${JSON.stringify(memoryData)};
-  // Initialization protection
+  // Initialization protection & debugger
+  window.__FESTIVE_LOG__ = [];
+  const oldLog = console.log;
+  console.log = function(...args) {
+    window.__FESTIVE_LOG__.push(args.join(' '));
+    oldLog.apply(console, args);
+  };
   window.addEventListener('error', function(e) {
-    if (e.message && e.message.includes('Script error')) {
-      alert("Note: To view your festive memory, please ensure you are connected to the internet to load MediaPipe gesture assets!");
+    const errorDiv = document.getElementById('export-error-reporter');
+    if (errorDiv) {
+      errorDiv.style.display = 'block';
+      errorDiv.innerText = "System Notification: " + (e.message || "Engine initialization error.");
     }
   });
 </script>`;
@@ -361,24 +359,34 @@ export default function UI() {
         html = html.replace('<body>', `<body>${dataScript}`);
       }
 
-      // Add a Loading Guard with Fail-Safe
+      // Add a Loading Guard with Fail-Safe and Error Reporter
       if (!html.includes('id="export-loading"')) {
         const loadingGuard = `
-<div id="export-loading" style="position:fixed;inset:0;background:black;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#D4AF37;font-family:serif;">
-  <div style="font-size:24px;margin-bottom:20px;letter-spacing:4px;">PREPARING YOUR GIFT...</div>
-  <div style="width:100px;height:2px;background:linear-gradient(to right, transparent, #D4AF37, transparent);animation:sweep 2s infinite;"></div>
-  <div id="export-fail-safe" style="margin-top:40px;opacity:0;transition:opacity 1s;pointer-events:none;">
-    <button onclick="document.getElementById('export-loading').remove()" style="background:transparent;border:1px solid #D4AF37;color:#D4AF37;padding:8px 20px;border-radius:20px;cursor:pointer;font-size:12px;letter-spacing:1px;">ENTER ANYWAY</button>
+<div id="export-loading" style="position:fixed;inset:0;background:black;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#D4AF37;font-family:serif;text-align:center;padding:20px;">
+  <div style="font-size:24px;margin-bottom:20px;letter-spacing:4px;font-weight:lighter;">PREPARING YOUR GIFT...</div>
+  <div style="width:140px;height:1px;background:rgba(212,175,55,0.3);position:relative;overflow:hidden;margin-bottom:30px;">
+     <div style="position:absolute;inset:0;background:#D4AF37;animation:sweep 2s infinite;"></div>
   </div>
+  
+  <div id="export-fail-safe" style="opacity:0;transition:opacity 1s;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:15px;">
+    <button onclick="document.getElementById('export-loading').remove()" style="background:transparent;border:1px solid rgba(212,175,55,0.5);color:#D4AF37;padding:10px 24px;border-radius:30px;cursor:pointer;font-size:11px;letter-spacing:2px;text-transform:uppercase;transition:all 0.3s;" onmouseover="this.style.background='rgba(212,175,55,0.1)'" onmouseout="this.style.background='transparent'">Skip Loading</button>
+    <div id="export-error-reporter" style="display:none;color:rgba(255,255,255,0.4);font-size:10px;max-width:300px;line-height:1.6;font-family:monospace;"></div>
+  </div>
+
   <style>
     @keyframes sweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
     #export-loading.ready #export-fail-safe { opacity: 1; pointer-events: auto; }
   </style>
   <script>
-    setTimeout(() => { document.getElementById('export-loading').classList.add('ready'); }, 5000);
+    // Logic: If React doesn't remove this within 3 seconds, show the skip button
+    setTimeout(() => { 
+      const loader = document.getElementById('export-loading');
+      if (loader) loader.classList.add('ready'); 
+    }, 3000);
   </script>
 </div>`;
-        html = html.replace('<div id="root"></div>', `<div id="root"></div>${loadingGuard}`);
+        // Use a safer insertion: find the div#root and put it after (or inside a wrapper)
+        html = html.replace(/<div[^>]*id=["']root["'][^>]*><\/div>/i, `<div id="root"></div>${loadingGuard}`);
       }
 
       // 6. Download
