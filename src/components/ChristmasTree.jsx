@@ -114,6 +114,7 @@ export default function ChristmasTree() {
       });
     }
   }, [phase]);
+  const releaseCount = useRef(0);
   const lastGesture = useRef('none');
   const rotationVelocity = useRef(0);
   const isDragging = useRef(false);
