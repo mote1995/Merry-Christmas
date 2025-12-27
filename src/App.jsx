@@ -8,9 +8,12 @@ import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
   React.useEffect(() => {
-    // 0. Cleanup Export Loading Guard if exists
+    // 0. Cleanup Export Loading Guard if exists (React-side confirmation)
     const loader = document.getElementById('export-loading');
-    if (loader) loader.remove();
+    if (loader) {
+      console.log("[App] React mounted, removing loading guard.");
+      loader.remove();
+    }
 
     // 1. Check for Standalone Inline Data
     if (window.__FESTIVE_MEMORY__) {

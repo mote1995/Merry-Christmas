@@ -361,13 +361,22 @@ export default function UI() {
         html = html.replace('<body>', `<body>${dataScript}`);
       }
 
-      // Add a Loading Guard (Will be removed by React once App mounts)
+      // Add a Loading Guard with Fail-Safe
       if (!html.includes('id="export-loading"')) {
         const loadingGuard = `
 <div id="export-loading" style="position:fixed;inset:0;background:black;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#D4AF37;font-family:serif;">
   <div style="font-size:24px;margin-bottom:20px;letter-spacing:4px;">PREPARING YOUR GIFT...</div>
   <div style="width:100px;height:2px;background:linear-gradient(to right, transparent, #D4AF37, transparent);animation:sweep 2s infinite;"></div>
-  <style>@keyframes sweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }</style>
+  <div id="export-fail-safe" style="margin-top:40px;opacity:0;transition:opacity 1s;pointer-events:none;">
+    <button onclick="document.getElementById('export-loading').remove()" style="background:transparent;border:1px solid #D4AF37;color:#D4AF37;padding:8px 20px;border-radius:20px;cursor:pointer;font-size:12px;letter-spacing:1px;">ENTER ANYWAY</button>
+  </div>
+  <style>
+    @keyframes sweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+    #export-loading.ready #export-fail-safe { opacity: 1; pointer-events: auto; }
+  </style>
+  <script>
+    setTimeout(() => { document.getElementById('export-loading').classList.add('ready'); }, 5000);
+  </script>
 </div>`;
         html = html.replace('<div id="root"></div>', `<div id="root"></div>${loadingGuard}`);
       }
