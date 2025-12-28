@@ -330,12 +330,22 @@ export default function UI() {
       await fetchAndInline('script[src]', 'src', '<script>', '</script>');
       await fetchAndInline('link[rel="stylesheet"]', 'href', '<style>', '</style>');
 
+      // 5. INLINE SCENE ASSETS (HDR, etc)
+      let hdrBase64 = null;
+      try {
+        hdrBase64 = await toBase64("hdr/potsdamer_platz_1k.hdr");
+      } catch (e) {
+        console.warn("Failed to inline HDR, fallback to remote/local path", e);
+      }
+
       // Clean up previous memory
       html = html.replace(/<script id="festive-memory-data">[\s\S]*?<\/script>/g, "");
       
       const dataScript = `
 <script id="festive-memory-data">
   window.__FESTIVE_MEMORY__ = ${JSON.stringify(memoryData)};
+  window.__FESTIVE_HDR__ = ${hdrBase64 ? `'${hdrBase64}'` : 'null'};
+  
   // Initialization protection & debugger
   window.__FESTIVE_LOG__ = [];
   const oldLog = console.log;

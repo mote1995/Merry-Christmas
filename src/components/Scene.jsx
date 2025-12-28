@@ -11,6 +11,7 @@ import {
 } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import ChristmasTree from './ChristmasTree';
+import ErrorBoundary from './ErrorBoundary';
 import useStore from '../store';
 import { useThree, useFrame } from '@react-three/fiber';
 
@@ -82,7 +83,9 @@ const TreeGroup = () => {
           <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
           <Sparkles count={200} scale={20} size={2} speed={0.4} opacity={0.5} />
           
-          <Environment preset="city" />
+          <ErrorBoundary fallback={<ambientLight intensity={0.5} />}>
+            <Environment files={window.__FESTIVE_HDR__ || "hdr/potsdamer_platz_1k.hdr"} />
+          </ErrorBoundary>
 
           {/* 3D Content */}
           <TreeGroup />
