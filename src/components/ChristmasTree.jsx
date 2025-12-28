@@ -365,33 +365,39 @@ export default function ChristmasTree() {
 
 
 function PhotoWall() {
-  const { photos, sharedId } = useStore();
+  const { photos } = useStore();
   
-  // Filter out invalid blob URLs that don't belong to this session
-  const validPhotos = React.useMemo(() => photos.filter(p => {
-    const isInvalidLocal = (p.url.startsWith('blob:') || p.url.startsWith('data:')) && sharedId;
-    return !isInvalidLocal;
-  }), [photos, sharedId]);
-
   return (
     <group>
-      {validPhotos.map((photo, i) => (
-        <SmartPhoto key={photo.id} photo={photo} index={i} total={validPhotos.length} />
+      {photos.map((photo, i) => (
+        <SmartPhoto key={photo.id} photo={photo} index={i} total={photos.length} />
       ))}
     </group>
   );
 }
 
-function SafePhotoMaterial({ url, id, isFocused }) {
+function PhotoContent({ url, id, isFocused }) {
   const { setPhotoAspect } = useStore();
-  const texture = useTexture(url, (tex) => {
-    if (tex && tex.image) {
-      const aspect = tex.image.width / tex.image.height;
+  const texture = useTexture(url);
+
+  useEffect(() => {
+    if (texture && texture.image) {
+      const aspect = texture.image.width / texture.image.height;
       setPhotoAspect(id, aspect);
     }
-  });
+  }, [texture, id, setPhotoAspect]);
 
-  return <meshStandardMaterial map={texture} transparent={true} opacity={isFocused ? 1 : 0.9} />;
+  return (
+    <mesh>
+      <planeGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial 
+        map={texture} 
+        transparent={true} 
+        opacity={isFocused ? 1 : 0.9} 
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  );
 }
 
 function SmartPhoto({ photo, index, total }) {
@@ -471,9 +477,8 @@ function SmartPhoto({ photo, index, total }) {
   });
 
   return (
-    <mesh 
-      ref={meshRef} 
-      renderOrder={isFocused ? 1000 : 0}
+    <group
+      ref={meshRef}
       userData={{ id: photo.id }}
       onClick={(e) => {
         e.stopPropagation();
@@ -486,15 +491,15 @@ function SmartPhoto({ photo, index, total }) {
       onPointerOut={(e) => {
         e.stopPropagation();
         document.body.style.cursor = 'auto';
-        // Removed auto-clear to prevent gesture flickering
       }}
     >
-      <planeGeometry args={[1, 1, 1]} />
-      <ErrorBoundary fallback={<meshStandardMaterial color="#333" />}>
-        <React.Suspense fallback={<meshStandardMaterial color="#666" transparent opacity={0.5} />}>
-          <SafePhotoMaterial url={photo.url} id={photo.id} isFocused={isFocused} />
+      {/* Photo Image with independent Suspense */}
+      <ErrorBoundary fallback={<mesh><planeGeometry /><meshStandardMaterial color="#333" /></mesh>}>
+        <React.Suspense fallback={<mesh><planeGeometry /><meshStandardMaterial color="#222" transparent opacity={0.5} /></mesh>}>
+          <PhotoContent url={photo.url} id={photo.id} isFocused={isFocused} />
         </React.Suspense>
       </ErrorBoundary>
+
       {/* Polaroid Frame */}
       <group position={[0, -0.1, -0.01]} scale={[1.1, 1.4, 1]}>
         <mesh>
@@ -509,7 +514,7 @@ function SmartPhoto({ photo, index, total }) {
           </mesh>
         )}
       </group>
-    </mesh>
+    </group>
   );
 }
 
