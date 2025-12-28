@@ -31,6 +31,7 @@ export default function App() {
       fetch(`https://jsonblob.com/api/jsonBlob/${id}`)
         .then(res => res.json())
         .then(data => {
+          useStore.getState().setSharedId(id);
           if (data.photos) useStore.getState().setPhotos(data.photos);
           if (data.bgmName && data.bgmUrl) useStore.getState().setBgm(data.bgmUrl, data.bgmName);
         })

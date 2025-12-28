@@ -1,7 +1,8 @@
 import React from 'react';
 import useStore from '../store';
 
-import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Snowflake } from 'lucide-react';
+import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Snowflake, Share2, Loader } from 'lucide-react';
+import { uploadImage, saveToCloud, updateOnCloud } from '../utils/sharing';
 
 const SERVICES = [
   { url: 'https://jsonblob.com/api/jsonBlob', method: 'POST' },
@@ -9,8 +10,11 @@ const SERVICES = [
 ];
 
 export default function UI() {
-  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos } = useStore();
+  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos, sharedId, setSharedId } = useStore();
   const audioRef = React.useRef(null);
+
+  const [isSharing, setIsSharing] = React.useState(false);
+  const [shareMsg, setShareMsg] = React.useState('');
 
   // Draggable Panel State
   const [panelPos, setPanelPos] = React.useState({ x: 0, y: 0 });
@@ -133,6 +137,59 @@ export default function UI() {
     if (files.length > 0) {
       const urls = files.map(file => URL.createObjectURL(file));
       addPhotos(urls);
+    }
+  };
+
+  const handleShare = async () => {
+    setIsSharing(true);
+    setShareMsg('Uploading...');
+    try {
+      // 1. Prepare photos (upload local blobs)
+      const currentPhotos = [...useStore.getState().photos];
+      const updatedPhotos = await Promise.all(currentPhotos.map(async (photo) => {
+        if (photo.url.startsWith('blob:') || photo.url.startsWith('data:')) {
+          try {
+            const cloudUrl = await uploadImage(photo.url);
+            return { ...photo, url: cloudUrl };
+          } catch (e) {
+            console.warn("Failed to upload a photo, keeping local:", e);
+            return photo;
+          }
+        }
+        return photo;
+      }));
+      
+      // Update store with cloud URLs
+      setPhotos(updatedPhotos);
+
+      // 2. Save state
+      const stateToSave = {
+        photos: updatedPhotos,
+        bgmUrl: bgmUrl.startsWith('blob:') ? '' : bgmUrl, // Don't save local audio blobs for now
+        bgmName
+      };
+
+      setShareMsg('Saving...');
+      let id = sharedId;
+      if (id) {
+        await updateOnCloud(id, stateToSave);
+      } else {
+        id = await saveToCloud(stateToSave);
+        setSharedId(id);
+      }
+
+      // 3. Generate link
+      const shareUrl = `${window.location.origin}${window.location.pathname}?id=${id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      
+      setShareMsg('Copied!');
+      setTimeout(() => setShareMsg(''), 3000);
+    } catch (err) {
+      console.error(err);
+      setShareMsg('Error');
+      setTimeout(() => setShareMsg(''), 3000);
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -261,6 +318,23 @@ export default function UI() {
                 <Camera size={14} className={isCameraOpen ? "text-red-400" : "text-vintage-gold"} />
               </div>
               <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">{isCameraOpen ? 'Close' : 'Camera'}</span>
+            </button>
+
+            <button 
+              onClick={handleShare}
+              disabled={isSharing}
+              className={`flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl transition-colors group relative ${isSharing ? 'opacity-50' : ''}`}
+            >
+              <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
+                {isSharing ? (
+                  <Loader size={14} className="text-vintage-gold animate-spin" />
+                ) : (
+                  <Share2 size={14} className="text-vintage-gold" />
+                )}
+              </div>
+              <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">
+                {shareMsg || (sharedId ? 'Update' : 'Share')}
+              </span>
             </button>
           </div>
         </div>

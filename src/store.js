@@ -54,6 +54,10 @@ const useStore = create((set) => ({
   // Keyboard Override
   isKeyboardGrab: false,
   setKeyboardGrab: (val) => set({ isKeyboardGrab: val }),
+
+  // Shared Link ID
+  sharedId: null,
+  setSharedId: (id) => set({ sharedId: id }),
 }));
 
 export default useStore;
