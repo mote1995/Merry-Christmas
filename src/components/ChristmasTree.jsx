@@ -28,7 +28,7 @@ const COLORS = [
 ];
 
 export default function ChristmasTree() {
-  const { phase, setPhase, photos, gesture, focusedId, setFocusedId, handVelocityX, setKeyboardGrab } = useStore();
+  const { phase, setPhase, photos, gesture, focusedId, setFocusedId, handVelocityX, setKeyboardGrab, config } = useStore();
   const particlesRef = useRef();
   const sparklesRef = useRef();
   const ringRef = useRef();

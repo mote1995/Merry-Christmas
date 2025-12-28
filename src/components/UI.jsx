@@ -343,6 +343,64 @@ export default function UI() {
               </span>
             </button>
           </div>
+
+          {/* Personalization Panel */}
+          <div className="mt-4 flex flex-col gap-2">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowPersonalize(!showPersonalize); }}
+              className="w-full py-2 px-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-vintage-gold text-[10px] font-bold uppercase tracking-widest transition-all"
+            >
+              {showPersonalize ? 'Close Personalization' : 'Personalize Gift'}
+            </button>
+
+            {showPersonalize && (
+              <div className="bg-black/40 backdrop-blur-md border border-white/10 p-4 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="space-y-1">
+                  <label className="text-[9px] text-white/50 uppercase tracking-widest ml-1">Recipient Name</label>
+                  <input 
+                    type="text" 
+                    value={config.recipientName}
+                    onChange={(e) => setConfig({ recipientName: e.target.value })}
+                    placeholder="Enter name..."
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-vintage-gold/50"
+                    onPointerDown={(e) => e.stopPropagation()}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] text-white/50 uppercase tracking-widest ml-1">Theme Color</label>
+                  <div className="flex gap-2">
+                    {[
+                      { name: 'Gold', color: '#D4AF37' },
+                      { name: 'Emerald', color: '#2d5a27' },
+                      { name: 'Frozen', color: '#87CEFA' },
+                      { name: 'Crimson', color: '#DC143C' }
+                    ].map((t) => (
+                      <button
+                        key={t.name}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => setConfig({ themeColor: t.color })}
+                        className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${config.themeColor === t.color ? 'border-white scale-110' : 'border-transparent opacity-50'}`}
+                        style={{ backgroundColor: t.color }}
+                        title={t.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] text-white/50 uppercase tracking-widest ml-1">Custom Message</label>
+                  <textarea 
+                    value={config.greeting}
+                    onChange={(e) => setConfig({ greeting: e.target.value })}
+                    placeholder="Happy Holidays..."
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-vintage-gold/50 h-16 resize-none"
+                    onPointerDown={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>
