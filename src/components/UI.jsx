@@ -144,26 +144,26 @@ export default function UI() {
       {/* Start Overlay with Envelope Effect */}
       <div className={`fixed inset-0 z-[100] transition-all duration-1000 pointer-events-none ${hasStarted ? 'opacity-0 delay-500' : 'opacity-100'}`}>
         {/* Top Half */}
-        <div className={`absolute top-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-b border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-end justify-center pb-12 z-20 ${hasStarted ? '-translate-y-full' : 'translate-y-0'}`}>
+        <div className={`absolute top-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-b border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-end justify-center pb-6 z-20 ${hasStarted ? '-translate-y-full' : 'translate-y-0'}`}>
           <div className={`pointer-events-auto transition-opacity duration-500 flex flex-col items-center gap-8 ${hasStarted ? 'opacity-0' : 'opacity-100 delay-300'}`}>
             <button
               onClick={handleStart}
-              className="group relative px-8 py-3 sm:px-12 sm:py-4 bg-gradient-to-r from-vintage-gold to-yellow-500 rounded-full text-black font-bold transition-all hover:scale-110 active:scale-95 shadow-[0_0_50px_rgba(212,175,55,0.5)]"
+              className="group relative px-6 py-2 sm:px-10 sm:py-3 bg-gradient-to-r from-vintage-gold to-yellow-500 rounded-full text-black font-bold transition-all hover:scale-110 active:scale-95 shadow-[0_0_50px_rgba(212,175,55,0.5)]"
             >
               <div className="flex items-center gap-4">
-                <div className="bg-black/10 p-2 sm:p-3 rounded-full group-hover:bg-black/20 transition-colors">
-                  <Play className="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor" />
+                <div className="bg-black/10 p-2 sm:p-2.5 rounded-full group-hover:bg-black/20 transition-colors">
+                  <Play className="w-5 h-5 sm:w-7 sm:h-7" fill="currentColor" />
                 </div>
-                <span className="font-cursive text-4xl sm:text-5xl leading-tight">Merry Christmas</span>
+                <span className="font-cursive text-3xl sm:text-4xl leading-tight">Merry Christmas</span>
               </div>
             </button>
           </div>
         </div>
         
         {/* Bottom Half */}
-        <div className={`absolute bottom-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-t border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-start justify-center pt-12 z-20 ${hasStarted ? 'translate-y-full' : 'translate-y-0'}`}>
+        <div className={`absolute bottom-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-t border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-start justify-center pt-16 z-20 ${hasStarted ? 'translate-y-full' : 'translate-y-0'}`}>
           <div className={`transition-opacity duration-500 ${hasStarted ? 'opacity-0' : 'opacity-100 delay-300'}`}>
-            <p className="text-white/60 text-[10px] sm:text-sm tracking-[0.4em] uppercase animate-pulse">Tap to open</p>
+            <p className="text-white/60 text-[10px] sm:text-xs tracking-[0.4em] uppercase animate-pulse">Tap to open</p>
           </div>
         </div>
       </div>
