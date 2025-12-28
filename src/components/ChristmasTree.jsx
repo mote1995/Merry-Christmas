@@ -212,6 +212,7 @@ export default function ChristmasTree() {
     if (particlesRef.current) {
       const mesh = particlesRef.current;
       const dummy = new THREE.Object3D();
+      const tempColor = new THREE.Color();
 
       positions.forEach((pos, i) => {
         // Interpolate position based on progress
@@ -236,8 +237,14 @@ export default function ChristmasTree() {
         dummy.scale.setScalar(0.05 * twinkle);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
+
+        // Multi-color tree particles
+        const treePalette = config.palette.tree;
+        tempColor.set(treePalette[i % treePalette.length]);
+        mesh.setColorAt(i, tempColor);
       });
       mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
 
     // Update Sparkling Particles
@@ -328,8 +335,7 @@ export default function ChristmasTree() {
         <instancedMesh ref={particlesRef} args={[null, null, PARTICLE_COUNT]}>
           <sphereGeometry args={[1, 6, 6]} />
           <meshStandardMaterial 
-            color={config.palette.tree} 
-            emissive={config.palette.tree}
+            emissive={config.palette.tree[0]}
             emissiveIntensity={0.8} 
             roughness={0.4}
             metalness={0.2}

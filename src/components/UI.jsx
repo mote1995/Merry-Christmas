@@ -376,27 +376,27 @@ export default function UI() {
                     {[
                       { 
                         name: 'Pink Gold', 
-                        tree: '#FFB6C1', 
+                        tree: ['#FFB6C1', '#FF69B4'], 
                         ornaments: ['#D4AF37', '#FFF5EE', '#FFD700', '#E0BFB8'],
                         preview: 'linear-gradient(135deg, #FFB6C1, #D4AF37)'
                       },
                       { 
                         name: 'Emerald Gold', 
-                        tree: '#2d5a27', 
+                        tree: ['#2d5a27', '#1a3a1a'], 
                         ornaments: ['#D4AF37', '#FF0000', '#F7E7CE', '#C0C0C0'],
                         preview: 'linear-gradient(135deg, #2d5a27, #D4AF37)'
                       },
                       { 
-                        name: 'Winter Frost', 
-                        tree: '#0047AB', 
-                        ornaments: ['#FFFFFF', '#DC143C', '#C0C0C0', '#87CEFA'],
-                        preview: 'linear-gradient(135deg, #0047AB, #FFFFFF)'
+                        name: 'Vintage Olive', 
+                        tree: ['#827717', '#D4AF37'], 
+                        ornaments: ['#FFD700', '#FFA000'],
+                        preview: 'linear-gradient(135deg, #827717, #D4AF37)'
                       },
                       { 
-                        name: 'Midnight', 
-                        tree: '#191970', 
-                        ornaments: ['#C0C0C0', '#E6E6FA', '#D4AF37', '#B0C4DE'],
-                        preview: 'linear-gradient(135deg, #191970, #C0C0C0)'
+                        name: 'Cyber Dream', 
+                        tree: ['#00BCD4', '#9C27B0'], 
+                        ornaments: ['#E0F7FA', '#FF4081'],
+                        preview: 'linear-gradient(135deg, #00BCD4, #9C27B0)'
                       }
                     ].map((t) => (
                       <button

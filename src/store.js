@@ -64,7 +64,7 @@ const useStore = create((set) => ({
     recipientName: '',
     palette: {
       name: 'Gold',
-      tree: '#2d5a27',
+      tree: ['#2d5a27', '#1a3a1a'],
       ornaments: ['#D4AF37', '#800020', '#5D8AA8', '#E0BFB8', '#F7E7CE'],
     },
     greeting: 'You have received a special memory',
