@@ -437,7 +437,9 @@ function SmartPhoto({ photo, index, total }) {
       // 5. STABLE SCALE
       const vFOV = (state.camera.fov * Math.PI) / 180;
       const visibleHeight = 2 * Math.tan(vFOV / 2) * dist;
-      const targetScale = visibleHeight * 0.7; 
+      const isPortrait = state.viewport.aspect < 1;
+      const scaleMult = isPortrait ? 0.45 : 0.7;
+      const targetScale = visibleHeight * scaleMult; 
       _s1.set(targetScale, targetScale, 1);
       meshRef.current.scale.lerp(_s1, 0.3);
       
