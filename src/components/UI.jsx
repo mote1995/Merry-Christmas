@@ -1,7 +1,7 @@
 import React from 'react';
 import useStore from '../store';
 
-import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Snowflake, Share2, Loader } from 'lucide-react';
+import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Snowflake, Share2, Loader, Trash2, X } from 'lucide-react';
 import { uploadImage, saveToCloud, updateOnCloud } from '../utils/sharing';
 
 const SERVICES = [
@@ -10,7 +10,7 @@ const SERVICES = [
 ];
 
 export default function UI() {
-  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos, sharedId, setSharedId, config, setConfig } = useStore();
+  const { phase, gesture, addPhotos, setPhotos, removePhoto, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos, sharedId, setSharedId, config, setConfig } = useStore();
   const audioRef = React.useRef(null);
 
   const [isSharing, setIsSharing] = React.useState(false);
@@ -346,6 +346,29 @@ export default function UI() {
               </span>
             </button>
           </div>
+          
+          {/* Manage Memories Section */}
+          {photos.length > 0 && (
+            <div className="w-full mt-4 pt-3 border-t border-white/10">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-[9px] text-white/40 uppercase tracking-[0.3em] font-bold">Manage Memories ({photos.length})</span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none snap-x h-16 items-center">
+                {photos.map((photo) => (
+                  <div key={photo.id} className="relative shrink-0 w-12 h-12 rounded-xl overflow-hidden border border-white/10 snap-center group/photo flex-none bg-white/5">
+                    <img src={photo.url} alt="memory" className="w-full h-full object-cover opacity-80 group-hover/photo:opacity-100 transition-opacity" />
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); removePhoto(photo.id); }}
+                      className="absolute inset-0 bg-red-500/80 opacity-0 group-hover/photo:opacity-100 flex items-center justify-center transition-all hover:bg-red-500"
+                      title="Delete Memory"
+                    >
+                      <Trash2 size={14} className="text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Personalization Panel */}
           <div className="mt-4 flex flex-col gap-2">

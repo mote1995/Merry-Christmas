@@ -31,6 +31,10 @@ const useStore = create((set) => ({
   setPhotoAspect: (id, aspect) => set((state) => ({
     photos: state.photos.map(p => p.id === id ? { ...p, aspect } : p)
   })),
+  removePhoto: (id) => set((state) => ({
+    photos: state.photos.filter(p => p.id !== id),
+    focusedId: state.focusedId === id ? null : state.focusedId
+  })),
 
   // Music state
   bgmUrl: 'audio/default_bgm.mp3',
