@@ -381,10 +381,21 @@ function PhotoWall() {
   );
 }
 
+function SafePhotoMaterial({ url, id, isFocused }) {
+  const { setPhotoAspect } = useStore();
+  const texture = useTexture(url, (tex) => {
+    if (tex && tex.image) {
+      const aspect = tex.image.width / tex.image.height;
+      setPhotoAspect(id, aspect);
+    }
+  });
+
+  return <meshStandardMaterial map={texture} transparent={true} opacity={isFocused ? 1 : 0.9} />;
+}
+
 function SmartPhoto({ photo, index, total }) {
   const meshRef = useRef();
   const { phase, gesture, focusedId, setFocusedId } = useStore();
-  const texture = useTexture(photo.url);
   const isFocused = focusedId === photo.id;
 
   const targetPos = useMemo(() => {
@@ -478,7 +489,11 @@ function SmartPhoto({ photo, index, total }) {
       }}
     >
       <planeGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial map={texture} />
+      <ErrorBoundary fallback={<meshStandardMaterial color="#333" />}>
+        <React.Suspense fallback={<meshStandardMaterial color="#666" transparent opacity={0.5} />}>
+          <SafePhotoMaterial url={photo.url} id={photo.id} isFocused={isFocused} />
+        </React.Suspense>
+      </ErrorBoundary>
       {/* Polaroid Frame */}
       <group position={[0, -0.1, -0.01]} scale={[1.1, 1.4, 1]}>
         <mesh>
