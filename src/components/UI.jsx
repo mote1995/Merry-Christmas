@@ -1,7 +1,7 @@
 import React from 'react';
 import useStore from '../store';
 
-import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Share2, Upload, Snowflake, FileCode } from 'lucide-react';
+import { Music, Camera, Image as ImageIcon, Heart, Play, Pause, Snowflake } from 'lucide-react';
 
 const SERVICES = [
   { url: 'https://jsonblob.com/api/jsonBlob', method: 'POST' },
@@ -10,8 +10,6 @@ const SERVICES = [
 
 export default function UI() {
   const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos } = useStore();
-  const [isSharing, setIsSharing] = React.useState(false);
-  const [isExporting, setIsExporting] = React.useState(false);
   const audioRef = React.useRef(null);
 
   // Draggable Panel State
@@ -138,289 +136,7 @@ export default function UI() {
     }
   };
 
-  const handleShare = async () => {
-    if (isSharing) return;
-    setIsSharing(true);
-    let payload = "";
-    try {
-      const photos = useStore.getState().photos;
-      const compressedPhotos = await Promise.all(photos.map(async (p) => {
-        const base64 = await compressImage(p.url);
-        return { ...p, url: base64 };
-      }));
 
-      const stateToSave = {
-        photos: compressedPhotos,
-        bgmName: bgmName,
-        bgmUrl: bgmUrl?.startsWith('blob:') ? null : bgmUrl
-      };
-
-      payload = JSON.stringify(stateToSave);
-      const sizeInKb = (payload.length * 2) / 1024;
-      
-      if (sizeInKb > 600) {
-        throw new Error(`Data too large (${sizeInKb.toFixed(0)}KB). Please remove 1-2 photos.`);
-      }
-
-      // Try multiple services
-      let blobId = null;
-      let serviceType = 'jsonblob';
-
-      try {
-        const res = await fetch('https://jsonblob.com/api/jsonBlob', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: payload
-        });
-        if (res.ok) blobId = res.headers.get('Location').split('/').pop();
-      } catch (e) {
-        console.warn("JsonBlob failed, trying fallback...");
-      }
-
-      if (!blobId) {
-        throw new Error("Temporary cloud service limit or network restriction. Please use the 'Export' button instead — it generates a standalone file that is much more reliable for sharing photos!");
-      }
-
-      const shareUrl = `${window.location.origin}${window.location.pathname}?id=${blobId}`;
-      prompt("Your link is ready! Copy and share:", shareUrl);
-    } catch (err) {
-      console.error(err);
-      if (payload && confirm(`${err.message}\n\nWould you like to download your festive memory as a backup file instead? (You can send this file to your friend)`)) {
-        downloadConfig(payload);
-      } else {
-        alert(`Share failed: ${err.message}`);
-      }
-    } finally {
-      setIsSharing(false);
-    }
-  };
-
-  const downloadConfig = (data) => {
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Christmas_Memory_${new Date().getTime()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = JSON.parse(event.target.result);
-          if (data.photos) setPhotos(data.photos);
-          if (data.bgmUrl && !data.bgmUrl.startsWith('blob:')) setBgm(data.bgmUrl, data.bgmName);
-          alert("Festive Memory Imported! 🎄");
-        } catch (err) {
-          alert("Invalid file format.");
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  };
-
-  const compressImage = (url) => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onerror = () => reject(new Error("Failed to load image for compression"));
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX = 300; 
-        let w = img.width;
-        let h = img.height;
-        if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } }
-        else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.5));
-      };
-      img.src = url;
-    });
-  };
-
-  const toBase64 = (url) => {
-    return new Promise((resolve, reject) => {
-      if (!url || url.startsWith('data:')) return resolve(url);
-      fetch(url)
-        .then(res => res.blob())
-        .then(blob => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        })
-        .catch(reject);
-    });
-  };
-
-  const handleExportHTML = async () => {
-    if (isExporting) return;
-    setIsExporting(true);
-    try {
-      // 1. Serialize Photos (high quality but compressed)
-      const serializedPhotos = await Promise.all(photos.map(async (p) => {
-        const base64 = await compressImage(p.url);
-        return { ...p, url: base64 };
-      }));
-
-      // 2. Serialize BGM
-      let serializedBgmUrl = bgmUrl;
-      if (bgmUrl && (bgmUrl.startsWith('blob:') || !bgmUrl.startsWith('http'))) {
-        try {
-          serializedBgmUrl = await toBase64(bgmUrl);
-        } catch (e) {
-          console.warn("Failed to inline BGM, falling back to original URL", e);
-        }
-      }
-
-      const memoryData = {
-        photos: serializedPhotos,
-        bgmName: bgmName,
-        bgmUrl: serializedBgmUrl
-      };
-
-      // 3. Get Source HTML and ENHANCE IT
-      let html = "";
-      try {
-        // Fetch base HTML (avoiding query params)
-        const baseUrl = window.location.origin + window.location.pathname;
-        const response = await fetch(baseUrl);
-        html = await response.text();
-      } catch (e) {
-        // Ultimate fallback
-        html = document.documentElement.outerHTML;
-        if (!html.startsWith('<!DOCTYPE')) html = '<!DOCTYPE html>\n' + html;
-      }
-      
-      // 4. INLINE ASSETS (Robust fetching)
-      const fetchAndInline = async (selector, attr, tagOpen, tagClose) => {
-        const elements = Array.from(document.querySelectorAll(selector));
-        for (const el of elements) {
-          const val = el.getAttribute(attr);
-          if (val && !val.startsWith('http') && !val.includes('//')) {
-            try {
-              const res = await fetch(val);
-              const content = await res.text();
-              // Replace the original tag with inlined one
-              // We use a safe identifier search
-              const escapedVal = val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-              const regex = new RegExp(`<${el.tagName.toLowerCase()}[^>]*${attr}=["']${escapedVal}["'][^>]*>(?:\\s*</${el.tagName.toLowerCase()}>)?`, 'i');
-              html = html.replace(regex, `${tagOpen}${content}${tagClose}`);
-            } catch (e) {
-              console.warn(`Failed to inline ${val}`, e);
-            }
-          }
-        }
-      };
-
-      await fetchAndInline('script[src]', 'src', '<script>', '</script>');
-      await fetchAndInline('link[rel="stylesheet"]', 'href', '<style>', '</style>');
-
-      // 5. INLINE SCENE ASSETS (HDR, etc)
-      let hdrBase64 = null;
-      try {
-        hdrBase64 = await toBase64("hdr/potsdamer_platz_1k.hdr");
-      } catch (e) {
-        console.warn("Failed to inline HDR, fallback to remote/local path", e);
-      }
-
-      // Clean up previous memory
-      html = html.replace(/<script id="festive-memory-data">[\s\S]*?<\/script>/g, "");
-      
-      const dataScript = `
-<script id="festive-memory-data">
-  window.__FESTIVE_MEMORY__ = ${JSON.stringify(memoryData)};
-  window.__FESTIVE_HDR__ = ${hdrBase64 ? `'${hdrBase64}'` : 'null'};
-  
-  // Initialization protection & debugger
-  window.__FESTIVE_LOG__ = [];
-  const oldLog = console.log;
-  console.log = function(...args) {
-    window.__FESTIVE_LOG__.push(args.join(' '));
-    oldLog.apply(console, args);
-  };
-  window.addEventListener('error', function(e) {
-    const errorDiv = document.getElementById('export-error-reporter');
-    if (errorDiv) {
-      errorDiv.style.display = 'block';
-      errorDiv.innerText = "System Notification: " + (e.message || "Engine initialization error.");
-    }
-  });
-</script>`;
-      
-      // Inject Data and Hydration Hook
-      if (html.includes('</head>')) {
-        html = html.replace('</head>', `${dataScript}</head>`);
-      } else {
-        html = html.replace('<body>', `<body>${dataScript}`);
-      }
-
-      // Add a Loading Guard with Fail-Safe and Error Reporter
-      if (!html.includes('id="export-loading"')) {
-        const loadingGuard = `
-<div id="export-loading" style="position:fixed;inset:0;background:black;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#D4AF37;font-family:serif;text-align:center;padding:20px;">
-  <div style="font-size:24px;margin-bottom:20px;letter-spacing:4px;font-weight:lighter;">PREPARING YOUR GIFT...</div>
-  <div style="width:140px;height:1px;background:rgba(212,175,55,0.3);position:relative;overflow:hidden;margin-bottom:30px;">
-     <div style="position:absolute;inset:0;background:#D4AF37;animation:sweep 2s infinite;"></div>
-  </div>
-  
-  <div id="export-fail-safe" style="opacity:0;transition:opacity 1s;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:15px;">
-    <button onclick="document.getElementById('export-loading').remove()" style="background:transparent;border:1px solid rgba(212,175,55,0.5);color:#D4AF37;padding:10px 24px;border-radius:30px;cursor:pointer;font-size:11px;letter-spacing:2px;text-transform:uppercase;transition:all 0.3s;" onmouseover="this.style.background='rgba(212,175,55,0.1)'" onmouseout="this.style.background='transparent'">Skip Loading</button>
-    <div id="export-error-reporter" style="display:none;color:rgba(255,255,255,0.4);font-size:10px;max-width:300px;line-height:1.6;font-family:monospace;"></div>
-  </div>
-
-  <style>
-    @keyframes sweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
-    #export-loading.ready #export-fail-safe { opacity: 1; pointer-events: auto; }
-  </style>
-  <script>
-    // Logic: If React doesn't remove this within 3 seconds, show the skip button
-    setTimeout(() => { 
-      const loader = document.getElementById('export-loading');
-      if (loader) loader.classList.add('ready'); 
-    }, 3000);
-  </script>
-</div>`;
-        // Use a safer insertion: find the div#root and put it after (or inside a wrapper)
-        html = html.replace(/<div[^>]*id=["']root["'][^>]*><\/div>/i, `<div id="root"></div>${loadingGuard}`);
-      }
-
-      // 6. Download
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `Merry_Christmas_${bgmName || 'Standalone'}.html`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-      
-      alert("Standalone HTML Generated! 🎁 This file contains your photos and music, and can be shared directly.");
-    } catch (err) {
-      console.error(err);
-      alert("Export failed: " + err.message);
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   return (
     <>
@@ -438,7 +154,7 @@ export default function UI() {
                 <div className="bg-black/10 p-3 rounded-full group-hover:bg-black/20 transition-colors">
                   <Play size={32} fill="currentColor" />
                 </div>
-                <span className="font-cursive text-5xl sm:text-7xl leading-tight">Merry Christmas</span>
+                <span className="font-cursive text-4xl sm:text-5xl leading-tight">Merry Christmas</span>
               </div>
             </button>
             <p className="text-white/60 text-sm tracking-[0.4em] uppercase animate-pulse">Tap to Open Your gift</p>
@@ -534,36 +250,7 @@ export default function UI() {
               <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">Memory</span>
             </label>
 
-            <button 
-              onClick={handleShare}
-              disabled={isSharing}
-              className={`flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl transition-colors group ${isSharing ? 'opacity-50' : ''}`}
-            >
-              <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
-                <Share2 size={14} className="text-vintage-gold" />
-              </div>
-              <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">{isSharing ? '...' : 'Share'}</span>
-            </button>
-              <button 
-                onClick={handleImport}
-                className="flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl transition-colors group"
-              >
-                <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
-                   <Upload size={14} className="text-vintage-gold rotate-180" />
-                </div>
-                <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">Import</span>
-              </button>
 
-              <button 
-                onClick={handleExportHTML}
-                disabled={isExporting}
-                className={`flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl transition-colors group ${isExporting ? 'opacity-50' : ''}`}
-              >
-                <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
-                   <FileCode size={14} className="text-vintage-gold" />
-                </div>
-                <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">{isExporting ? '...' : 'Export'}</span>
-              </button>
               
             <button 
               onClick={toggleCamera}
