@@ -160,13 +160,16 @@ export default function UI() {
         return photo;
       }));
       
-      // Update store with cloud URLs
-      setPhotos(updatedPhotos);
+      // 2. Filter out any photos that failed to upload (no blob/data URLs allowed in cloud save)
+      const cloudOnlyPhotos = updatedPhotos.filter(p => !p.url.startsWith('blob:') && !p.url.startsWith('data:'));
 
-      // 2. Save state
+      // Update store with final cloud URLs
+      setPhotos(cloudOnlyPhotos);
+
+      // 3. Save state
       const stateToSave = {
-        photos: updatedPhotos,
-        bgmUrl: bgmUrl.startsWith('blob:') ? '' : bgmUrl, // Don't save local audio blobs for now
+        photos: cloudOnlyPhotos,
+        bgmUrl: bgmUrl.startsWith('blob:') ? '' : bgmUrl,
         bgmName,
         config
       };
