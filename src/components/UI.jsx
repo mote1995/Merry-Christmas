@@ -428,26 +428,26 @@ export default function UI() {
       {/* Start Overlay with Envelope Effect */}
       <div className={`fixed inset-0 z-[100] transition-all duration-1000 pointer-events-none ${hasStarted ? 'opacity-0 delay-500' : 'opacity-100'}`}>
         {/* Top Half */}
-        <div className={`absolute top-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-b border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-end justify-center pb-12 z-20 ${hasStarted ? '-translate-y-full' : 'translate-y-0'}`}>
-          {/* Title removed per request */}
-        </div>
-        
-        {/* Bottom Half */}
-        <div className={`absolute bottom-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-t border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-start justify-center pt-6 z-20 ${hasStarted ? 'translate-y-full' : 'translate-y-0'}`}>
+        <div className={`absolute top-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-b border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-center justify-center pt-24 z-20 ${hasStarted ? '-translate-y-full' : 'translate-y-0'}`}>
           <div className={`pointer-events-auto transition-opacity duration-500 flex flex-col items-center gap-8 ${hasStarted ? 'opacity-0' : 'opacity-100 delay-300'}`}>
             <button
               onClick={handleStart}
-              className="group relative px-16 py-8 bg-gradient-to-r from-vintage-gold to-yellow-500 rounded-full text-black font-bold text-3xl transition-all hover:scale-110 active:scale-95 shadow-[0_0_50px_rgba(212,175,55,0.5)]"
+              className="group relative px-16 py-8 bg-gradient-to-r from-vintage-gold to-yellow-500 rounded-full text-black font-bold transition-all hover:scale-110 active:scale-95 shadow-[0_0_50px_rgba(212,175,55,0.5)]"
             >
               <div className="flex items-center gap-4">
                 <div className="bg-black/10 p-3 rounded-full group-hover:bg-black/20 transition-colors">
                   <Play size={32} fill="currentColor" />
                 </div>
-                <span className="font-cursive text-4xl sm:text-5xl">Merry Christmas</span>
+                <span className="font-cursive text-5xl sm:text-7xl leading-tight">Merry Christmas</span>
               </div>
             </button>
-            <p className="text-white/60 text-sm tracking-[0.3em] uppercase animate-pulse">Tap to Open Your gift</p>
+            <p className="text-white/60 text-sm tracking-[0.4em] uppercase animate-pulse">Tap to Open Your gift</p>
           </div>
+        </div>
+        
+        {/* Bottom Half */}
+        <div className={`absolute bottom-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-t border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-start justify-center z-20 ${hasStarted ? 'translate-y-full' : 'translate-y-0'}`}>
+          {/* Content moved to top half per request */}
         </div>
       </div>
 
