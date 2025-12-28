@@ -253,7 +253,7 @@ export default function HandTracker() {
       style={{ transform: `translate(${camPos.x}px, ${camPos.y}px)` }}
       onPointerDown={handlePointerDown}
     >
-      <div className={`relative w-40 h-30 sm:w-48 sm:h-36 bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/20 transition-all ${isCameraOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div className={`relative w-24 h-18 sm:w-48 sm:h-36 bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/20 transition-all ${isCameraOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <video 
           ref={videoRef} 
           playsInline 

@@ -34,12 +34,14 @@ export default function Scene() {
   const phase = useStore((state) => state.phase);
 const TreeGroup = () => {
   const { hasStarted } = useStore();
+  const { viewport } = useThree();
   const groupRef = useRef();
 
   useFrame((state, delta) => {
     if (groupRef.current) {
-      // Move tree from y=2.0 down to y=-1.2 when started
-      const targetY = hasStarted ? -1.2 : 2.0;
+      const isPortrait = viewport.aspect < 1;
+      // Move tree from y=2.0 down to y=-1.2 (desktop) or y=-0.2 (mobile) when started
+      const targetY = hasStarted ? (isPortrait ? -0.2 : -1.2) : 2.0;
       groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, delta * 1.5);
     }
   });
