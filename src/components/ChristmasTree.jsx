@@ -338,8 +338,8 @@ export default function ChristmasTree() {
           <sphereGeometry args={[1, 6, 6]} />
           <meshStandardMaterial 
             color="#2d5a27" 
-            emissive="#2d5a27"
-            emissiveIntensity={1.0} 
+            emissive={config.themeColor || "#2d5a27"}
+            emissiveIntensity={0.5} 
             roughness={0.5}
             metalness={0.1}
           />
@@ -351,8 +351,8 @@ export default function ChristmasTree() {
           <meshStandardMaterial 
             roughness={0.0} 
             metalness={1.0} 
-            color="white"
-            emissive="#ffffff"
+            color={config.themeColor || "white"}
+            emissive={config.themeColor || "#ffffff"}
             emissiveIntensity={0.3} 
           />
         </instancedMesh>

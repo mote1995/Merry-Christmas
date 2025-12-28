@@ -58,6 +58,16 @@ const useStore = create((set) => ({
   // Shared Link ID
   sharedId: null,
   setSharedId: (id) => set({ sharedId: id }),
+
+  // Personalization Config
+  config: {
+    recipientName: '',
+    themeColor: '#D4AF37', // Default Gold
+    greeting: 'You have received a special memory',
+  },
+  setConfig: (newConfig) => set((state) => ({ 
+    config: { ...state.config, ...newConfig } 
+  })),
 }));
 
 export default useStore;

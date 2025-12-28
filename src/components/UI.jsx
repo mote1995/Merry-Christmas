@@ -10,11 +10,12 @@ const SERVICES = [
 ];
 
 export default function UI() {
-  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos, sharedId, setSharedId } = useStore();
+  const { phase, gesture, addPhotos, setPhotos, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos, sharedId, setSharedId, config, setConfig } = useStore();
   const audioRef = React.useRef(null);
 
   const [isSharing, setIsSharing] = React.useState(false);
   const [shareMsg, setShareMsg] = React.useState('');
+  const [showPersonalize, setShowPersonalize] = React.useState(false);
 
   // Draggable Panel State
   const [panelPos, setPanelPos] = React.useState({ x: 0, y: 0 });
@@ -166,7 +167,8 @@ export default function UI() {
       const stateToSave = {
         photos: updatedPhotos,
         bgmUrl: bgmUrl.startsWith('blob:') ? '' : bgmUrl, // Don't save local audio blobs for now
-        bgmName
+        bgmName,
+        config
       };
 
       setShareMsg('Saving...');
@@ -211,7 +213,9 @@ export default function UI() {
                 <div className="bg-black/10 p-2 sm:p-2.5 rounded-full group-hover:bg-black/20 transition-colors">
                   <Play className="w-5 h-5 sm:w-7 sm:h-7" fill="currentColor" />
                 </div>
-                <span className="font-cursive text-3xl sm:text-4xl leading-tight">Merry Christmas</span>
+                <span className="font-cursive text-3xl sm:text-4xl leading-tight">
+                  {config.recipientName ? `Merry Christmas, ${config.recipientName}` : 'Merry Christmas'}
+                </span>
               </div>
             </button>
           </div>
@@ -220,7 +224,9 @@ export default function UI() {
         {/* Bottom Half */}
         <div className={`absolute bottom-0 left-0 w-full h-1/2 bg-black/80 backdrop-blur-xl border-t border-white/10 transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] flex items-start justify-center pt-16 z-20 ${hasStarted ? 'translate-y-full' : 'translate-y-0'}`}>
           <div className={`transition-opacity duration-500 ${hasStarted ? 'opacity-0' : 'opacity-100 delay-300'}`}>
-            <p className="text-white/60 text-[10px] sm:text-xs tracking-[0.4em] uppercase animate-pulse">Tap to open</p>
+            <p className="text-white/60 text-[10px] sm:text-xs tracking-[0.4em] uppercase animate-pulse">
+              {config.greeting || 'Tap to open'}
+            </p>
           </div>
         </div>
       </div>
