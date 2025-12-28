@@ -17,7 +17,7 @@ export async function uploadImage(target) {
   if (NAS_URL) {
     try {
       const formData = new FormData();
-      if (typeof target === 'string' && target.startsWith('data:')) {
+      if (typeof target === 'string' && (target.startsWith('data:') || target.startsWith('blob:'))) {
         const response = await fetch(target);
         const blob = await response.blob();
         formData.append('image', blob, 'memory.jpg');
@@ -39,8 +39,10 @@ export async function uploadImage(target) {
 
   // Fallback to ImgBB
   const formData = new FormData();
-  if (typeof target === 'string' && target.startsWith('data:')) {
-    formData.append('image', target.split(',')[1]);
+  if (typeof target === 'string' && (target.startsWith('data:') || target.startsWith('blob:'))) {
+    const response = await fetch(target);
+    const blob = await response.blob();
+    formData.append('image', blob, 'memory.jpg');
   } else {
     formData.append('image', target);
   }
