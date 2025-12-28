@@ -415,13 +415,15 @@ function SmartPhoto({ photo, index, total }) {
 
   useFrame((state) => {
     if (isFocused) {
+      const isPortrait = state.viewport.aspect < 1;
       // 1. FORCE PARENT SYNC
       meshRef.current.parent.updateMatrixWorld();
       
       // 2. CALCULATE TARGET IN WORLD SPACE
       const dist = 8;
-      // We project the point relative to the camera
-      _v1.set(0, 0, -dist).applyQuaternion(state.camera.quaternion).add(state.camera.position);
+      const verticalOffset = isPortrait ? 1.2 : 0;
+      // Project the point higher relative to the camera for mobile
+      _v1.set(0, verticalOffset, -dist).applyQuaternion(state.camera.quaternion).add(state.camera.position);
       
       // 3. LOCK POSITION IN WORLD SPACE THEN CONVERT
       // This ensures even if the parent moves, the photo pursues the world-point exactly
@@ -437,7 +439,6 @@ function SmartPhoto({ photo, index, total }) {
       // 5. STABLE SCALE
       const vFOV = (state.camera.fov * Math.PI) / 180;
       const visibleHeight = 2 * Math.tan(vFOV / 2) * dist;
-      const isPortrait = state.viewport.aspect < 1;
       const scaleMult = isPortrait ? 0.45 : 0.7;
       const targetScale = visibleHeight * scaleMult; 
       _s1.set(targetScale, targetScale, 1);
