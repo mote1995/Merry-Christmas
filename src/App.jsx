@@ -37,7 +37,9 @@ export default function App() {
         .then(res => res.json())
         .then(data => {
           useStore.getState().setSharedId(id);
-          if (data.photos) useStore.getState().setPhotos(data.photos);
+          // Crucial: When loading a shared link, we MUST replace the local state 
+          // with the shared state to avoid trying to load sender's local 'blob:' URLs
+          useStore.getState().setPhotos(data.photos || []); 
           if (data.bgmName && data.bgmUrl) useStore.getState().setBgm(data.bgmUrl, data.bgmName);
           if (data.config) useStore.getState().setConfig(data.config);
         })
