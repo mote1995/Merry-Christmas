@@ -372,23 +372,42 @@ export default function UI() {
 
                 <div className="space-y-1">
                   <label className="text-[9px] text-white/50 uppercase tracking-widest ml-1">Theme Color</label>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {[
-                      { name: 'Gold', color: '#D4AF37' },
-                      { name: 'Emerald', color: '#2d5a27' },
-                      { name: 'Frozen', color: '#87CEFA' },
-                      { name: 'Crimson', color: '#DC143C' },
-                      { name: 'Pink', color: '#FF69B4' },
-                      { name: 'Silver', color: '#C0C0C0' }
+                      { 
+                        name: 'Pink Gold', 
+                        tree: '#FFB6C1', 
+                        ornaments: ['#D4AF37', '#FFF5EE', '#FFD700', '#E0BFB8'],
+                        preview: 'linear-gradient(135deg, #FFB6C1, #D4AF37)'
+                      },
+                      { 
+                        name: 'Emerald Gold', 
+                        tree: '#2d5a27', 
+                        ornaments: ['#D4AF37', '#FF0000', '#F7E7CE', '#C0C0C0'],
+                        preview: 'linear-gradient(135deg, #2d5a27, #D4AF37)'
+                      },
+                      { 
+                        name: 'Winter Frost', 
+                        tree: '#0047AB', 
+                        ornaments: ['#FFFFFF', '#DC143C', '#C0C0C0', '#87CEFA'],
+                        preview: 'linear-gradient(135deg, #0047AB, #FFFFFF)'
+                      },
+                      { 
+                        name: 'Midnight', 
+                        tree: '#191970', 
+                        ornaments: ['#C0C0C0', '#E6E6FA', '#D4AF37', '#B0C4DE'],
+                        preview: 'linear-gradient(135deg, #191970, #C0C0C0)'
+                      }
                     ].map((t) => (
                       <button
                         key={t.name}
                         onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => setConfig({ themeColor: t.color })}
-                        className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${config.themeColor === t.color ? 'border-white scale-110' : 'border-transparent opacity-50'}`}
-                        style={{ backgroundColor: t.color }}
-                        title={t.name}
-                      />
+                        onClick={() => setConfig({ palette: { name: t.name, tree: t.tree, ornaments: t.ornaments } })}
+                        className={`flex items-center gap-2 p-2 rounded-xl border-2 transition-all hover:scale-105 ${config.palette.name === t.name ? 'border-vintage-gold bg-white/10' : 'border-transparent bg-white/5 opacity-60'}`}
+                      >
+                        <div className="w-4 h-4 rounded-full" style={{ background: t.preview }} />
+                        <span className="text-[9px] text-white font-bold uppercase tracking-tighter">{t.name}</span>
+                      </button>
                     ))}
                   </div>
                 </div>

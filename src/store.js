@@ -62,7 +62,11 @@ const useStore = create((set) => ({
   // Personalization Config
   config: {
     recipientName: '',
-    themeColor: '#D4AF37', // Default Gold
+    palette: {
+      name: 'Gold',
+      tree: '#2d5a27',
+      ornaments: ['#D4AF37', '#800020', '#5D8AA8', '#E0BFB8', '#F7E7CE'],
+    },
     greeting: 'You have received a special memory',
   },
   setConfig: (newConfig) => set((state) => ({ 

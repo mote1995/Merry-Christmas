@@ -269,9 +269,9 @@ export default function ChristmasTree() {
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
 
-        // Apply premium colors + theme sync
-        const baseColors = ['#D4AF37', '#800020', '#5D8AA8', '#E0BFB8', '#F7E7CE'];
-        const colStr = i % 2 === 0 ? config.themeColor : baseColors[i % baseColors.length];
+        // Apply dreamlike colors from palette
+        const palette = config.palette.ornaments;
+        const colStr = palette[i % palette.length];
         tempColor.set(colStr);
         mesh.setColorAt(i, tempColor);
       });
@@ -333,11 +333,11 @@ export default function ChristmasTree() {
         <instancedMesh ref={particlesRef} args={[null, null, PARTICLE_COUNT]}>
           <sphereGeometry args={[1, 6, 6]} />
           <meshStandardMaterial 
-            color="#2d5a27" 
-            emissive={config.themeColor || "#2d5a27"}
-            emissiveIntensity={0.5} 
-            roughness={0.5}
-            metalness={0.1}
+            color={config.palette.tree} 
+            emissive={config.palette.tree}
+            emissiveIntensity={0.8} 
+            roughness={0.4}
+            metalness={0.2}
           />
         </instancedMesh>
 
@@ -347,9 +347,8 @@ export default function ChristmasTree() {
           <meshStandardMaterial 
             roughness={0.0} 
             metalness={1.0} 
-            color={config.themeColor || "white"}
-            emissive={config.themeColor || "#ffffff"}
-            emissiveIntensity={0.3} 
+            emissive="#ffffff"
+            emissiveIntensity={0.5} 
           />
         </instancedMesh>
         
