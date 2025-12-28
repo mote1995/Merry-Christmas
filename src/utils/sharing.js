@@ -6,7 +6,7 @@ const IMGBB_API_KEY = '6d207e02197a3d40d4094d1a2932a97f'; // Public test key
 
 // Configure your NAS URL here. Example: 'http://192.168.1.100:3001'
 // If empty, it will use cloud fallbacks (ImgBB/JsonBlob)
-export const NAS_URL = 'https://remote-access-32769.zconnect.cn'; 
+export const NAS_URL = 'https://cite-thee-selection-reading.trycloudflare.com'; 
 export const NAS_API_KEY = 'merry_christmas_2025';
 
 /**
