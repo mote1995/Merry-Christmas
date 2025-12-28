@@ -378,14 +378,22 @@ function PhotoWall() {
 
 function PhotoContent({ url, id, isFocused }) {
   const { setPhotoAspect } = useStore();
-  const texture = useTexture(url);
+  const [texture, setTexture] = React.useState(null);
 
-  useEffect(() => {
-    if (texture && texture.image) {
-      const aspect = texture.image.width / texture.image.height;
-      setPhotoAspect(id, aspect);
-    }
-  }, [texture, id, setPhotoAspect]);
+  React.useLayoutEffect(() => {
+    let active = true;
+    new THREE.TextureLoader().load(url, (tex) => {
+      if (active) {
+        tex.needsUpdate = true;
+        const aspect = tex.image.width / tex.image.height;
+        setPhotoAspect(id, aspect);
+        setTexture(tex);
+      }
+    });
+    return () => { active = false; };
+  }, [url, id, setPhotoAspect]);
+
+  if (!texture) return <mesh><planeGeometry /><meshStandardMaterial color="#222" transparent opacity={0.5} /></mesh>;
 
   return (
     <mesh>
@@ -493,12 +501,8 @@ function SmartPhoto({ photo, index, total }) {
         document.body.style.cursor = 'auto';
       }}
     >
-      {/* Photo Image with independent Suspense */}
-      <ErrorBoundary fallback={<mesh><planeGeometry /><meshStandardMaterial color="#333" /></mesh>}>
-        <React.Suspense fallback={<mesh><planeGeometry /><meshStandardMaterial color="#222" transparent opacity={0.5} /></mesh>}>
-          <PhotoContent url={photo.url} id={photo.id} isFocused={isFocused} />
-        </React.Suspense>
-      </ErrorBoundary>
+      {/* Photo Image Content (handles its own loading/error fallback) */}
+      <PhotoContent url={photo.url} id={photo.id} isFocused={isFocused} />
 
       {/* Polaroid Frame */}
       <group position={[0, -0.1, -0.01]} scale={[1.1, 1.4, 1]}>

@@ -174,20 +174,15 @@ export default function UI() {
         config
       };
 
-      setShareMsg('Saving...');
-      let id = sharedId;
-      if (id) {
-        await updateOnCloud(id, stateToSave);
-      } else {
-        id = await saveToCloud(stateToSave);
-        setSharedId(id);
-      }
+      setShareMsg('Generating Link...');
+      const id = await saveToCloud(stateToSave);
+      setSharedId(id);
 
       // 3. Generate link
       const shareUrl = `${window.location.origin}${window.location.pathname}?id=${id}`;
       await navigator.clipboard.writeText(shareUrl);
       
-      setShareMsg('Copied!');
+      setShareMsg('Link Ready!');
       setTimeout(() => setShareMsg(''), 3000);
     } catch (err) {
       console.error(err);
@@ -342,7 +337,7 @@ export default function UI() {
                 )}
               </div>
               <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">
-                {shareMsg || (sharedId ? 'Update' : 'Share')}
+                {shareMsg || 'Create Link'}
               </span>
             </button>
           </div>
