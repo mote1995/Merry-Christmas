@@ -305,13 +305,8 @@ export default function ChristmasTree() {
       }
     }
 
-    // Clear focus if fist detected (manual reset)
-    if (gesture === 'fist') {
-       setFocusedId(null);
-    }
-
-    // Clear focus if fist detected (manual reset)
-    if (gesture === 'fist') {
+    // Clear focus if fist detected or (blooming phase + wave/open)
+    if (gesture === 'fist' || (phase === 'blooming' && (gesture === 'wave' || gesture === 'open'))) {
        setFocusedId(null);
     }
 
