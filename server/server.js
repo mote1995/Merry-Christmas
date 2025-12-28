@@ -19,6 +19,11 @@ const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
+// Root Route for verification
+app.get('/', (req, res) => {
+  res.send('<h1>🎄 Christmas Tree Backend is running!</h1><p>API endpoints are active.</p>');
+});
+
 // Configure Multer for image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
