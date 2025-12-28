@@ -4,6 +4,7 @@ import { Instance, Instances, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { generateTreePoints, generateSpiralPoints, generateNebulaPoints } from '../utils/geometry';
+import ErrorBoundary from './ErrorBoundary';
 import useStore from '../store';
 
 const PARTICLE_COUNT = 3000;
