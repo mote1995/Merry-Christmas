@@ -40,14 +40,14 @@ const TreeGroup = () => {
   useFrame((state, delta) => {
     if (groupRef.current) {
       const isPortrait = viewport.aspect < 1;
-      // Move tree from y=2.0 down to y=-1.2 (desktop) or y=1.8 (mobile) when started
-      const targetY = hasStarted ? (isPortrait ? 1.8 : -1.2) : 2.0;
+      // Move tree from y=2.0 down to y=-1.2 (desktop) or y=3.2 (mobile) when started
+      const targetY = hasStarted ? (isPortrait ? 3.2 : -1.2) : (isPortrait ? 5.2 : 2.0);
       groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, delta * 1.5);
     }
   });
 
   return (
-    <group ref={groupRef} position={[0, 2, 0]}>
+    <group ref={groupRef} position={[0, viewport.aspect < 1 ? 5.2 : 2.0, 0]}>
       <ChristmasTree />
     </group>
   );
