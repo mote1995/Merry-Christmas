@@ -269,8 +269,9 @@ export default function ChristmasTree() {
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
 
-        // Apply premium colors
-        const colStr = SPARKLE_PALETTE[i % SPARKLE_PALETTE.length];
+        // Apply premium colors + theme sync
+        const baseColors = ['#D4AF37', '#800020', '#5D8AA8', '#E0BFB8', '#F7E7CE'];
+        const colStr = i % 2 === 0 ? config.themeColor : baseColors[i % baseColors.length];
         tempColor.set(colStr);
         mesh.setColorAt(i, tempColor);
       });
@@ -293,7 +294,7 @@ export default function ChristmasTree() {
       }
     }
 
-    // Unified Point-Up Selection with 30-frame debounce
+    // Unified Point-Up Selection
     const isPointUp = gesture === 'point_up';
     if (isPointUp) {
       if (!focusedId && photos.length > 0) {
@@ -301,17 +302,12 @@ export default function ChristmasTree() {
         const selectedId = photos[randomIdx].id;
         console.log(`[Focus] Random Selection: ${selectedId}`);
         setFocusedId(selectedId);
-        releaseCount.current = 0;
-      } else {
-        releaseCount.current = 0; // Reset while active
       }
-    } else if (focusedId) {
-      // Release only after 30 frames of non-pointing
-      releaseCount.current++;
-      if (releaseCount.current > 30) {
-        setFocusedId(null);
-        releaseCount.current = 0;
-      }
+    }
+
+    // Clear focus if fist detected (manual reset)
+    if (gesture === 'fist') {
+       setFocusedId(null);
     }
 
     // Clear focus if fist detected (manual reset)

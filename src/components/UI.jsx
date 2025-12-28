@@ -377,7 +377,9 @@ export default function UI() {
                       { name: 'Gold', color: '#D4AF37' },
                       { name: 'Emerald', color: '#2d5a27' },
                       { name: 'Frozen', color: '#87CEFA' },
-                      { name: 'Crimson', color: '#DC143C' }
+                      { name: 'Crimson', color: '#DC143C' },
+                      { name: 'Pink', color: '#FF69B4' },
+                      { name: 'Silver', color: '#C0C0C0' }
                     ].map((t) => (
                       <button
                         key={t.name}
