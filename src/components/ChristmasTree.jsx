@@ -368,12 +368,18 @@ export default function ChristmasTree() {
 
 
 function PhotoWall() {
-  const { photos } = useStore();
+  const { photos, sharedId } = useStore();
+  
+  // Filter out invalid blob URLs that don't belong to this session
+  const validPhotos = React.useMemo(() => photos.filter(p => {
+    const isInvalidLocal = (p.url.startsWith('blob:') || p.url.startsWith('data:')) && sharedId;
+    return !isInvalidLocal;
+  }), [photos, sharedId]);
 
   return (
     <group>
-      {photos.map((photo, i) => (
-        <SmartPhoto key={photo.id} photo={photo} index={i} total={photos.length} />
+      {validPhotos.map((photo, i) => (
+        <SmartPhoto key={photo.id} photo={photo} index={i} total={validPhotos.length} />
       ))}
     </group>
   );
