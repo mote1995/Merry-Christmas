@@ -7,6 +7,7 @@ const IMGBB_API_KEY = '6d207e02197a3d40d4094d1a2932a97f'; // Public test key
 // Configure your NAS URL here. Example: 'http://192.168.1.100:3001'
 // If empty, it will use cloud fallbacks (ImgBB/JsonBlob)
 export const NAS_URL = 'https://remote-access-32769.zconnect.cn'; 
+export const NAS_API_KEY = 'merry_christmas_2025';
 
 /**
  * Uploads a file or data URL 
@@ -26,6 +27,7 @@ export async function uploadImage(target) {
 
       const res = await fetch(`${NAS_URL}/api/upload`, {
         method: 'POST',
+        headers: { 'X-API-Key': NAS_API_KEY },
         body: formData
       });
       const data = await res.json();
@@ -65,7 +67,10 @@ export async function saveToCloud(state) {
     try {
       const res = await fetch(`${NAS_URL}/api/records`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-API-Key': NAS_API_KEY
+        },
         body: JSON.stringify(state)
       });
       const data = await res.json();
@@ -94,7 +99,10 @@ export async function updateOnCloud(id, state) {
     try {
       const res = await fetch(`${NAS_URL}/api/records/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-API-Key': NAS_API_KEY
+        },
         body: JSON.stringify(state)
       });
       const data = await res.json();
