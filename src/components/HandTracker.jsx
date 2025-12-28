@@ -59,13 +59,13 @@ export default function HandTracker() {
           const hl = await HandLandmarker.createFromOptions(vision, {
             baseOptions: {
               modelAssetPath: modelUrl,
-              delegate: "GPU"
+              delegate: "CPU" // CPU is more reliable across various mobile browsers than GPU
             },
             runningMode: "VIDEO",
             numHands: 1,
-            minHandDetectionConfidence: 0.3, // Lowered for better detection
-            minHandPresenceConfidence: 0.3,
-            minTrackingConfidence: 0.3
+            minHandDetectionConfidence: 0.4, 
+            minHandPresenceConfidence: 0.4,
+            minTrackingConfidence: 0.4
           });
           setLandmarker(hl);
           setStatus('Ready');
@@ -86,8 +86,10 @@ export default function HandTracker() {
   const predictWebcam = () => {
     if (!videoRef.current || !landmarker || !canvasRef.current || !isCameraOpen) return;
     
-    let nowInMs = Date.now();
-    if (videoRef.current.currentTime !== lastVideoTime.current && videoRef.current.readyState >= 2) {
+    let nowInMs = performance.now();
+    if (videoRef.current.currentTime !== lastVideoTime.current && 
+        videoRef.current.readyState >= 2 && 
+        videoRef.current.videoWidth > 0) {
       lastVideoTime.current = videoRef.current.currentTime;
       const results = landmarker.detectForVideo(videoRef.current, nowInMs);
       
@@ -123,11 +125,16 @@ export default function HandTracker() {
   useEffect(() => {
     if (isCameraOpen && videoRef.current) {
       navigator.mediaDevices.getUserMedia({ 
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } 
+        video: { 
+          width: { ideal: 640 }, 
+          height: { ideal: 480 }, 
+          frameRate: { ideal: 30 },
+          facingMode: "user"
+        } 
       }).then((stream) => {
         videoRef.current.srcObject = stream;
-        videoRef.current.onloadeddata = () => {
-          videoRef.current.play();
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().catch(e => console.error("Play error:", e));
         };
       }).catch(err => {
         console.error("Camera Access Error:", err);
@@ -249,9 +256,9 @@ export default function HandTracker() {
       <div className={`relative w-40 h-30 sm:w-48 sm:h-36 bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/20 transition-all ${isCameraOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <video 
           ref={videoRef} 
-          autoPlay 
           playsInline 
           muted
+          autoPlay
           className="w-full h-full object-cover brightness-110 contrast-110"
           style={{ transform: 'scaleX(-1)' }}
         />
