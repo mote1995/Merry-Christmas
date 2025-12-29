@@ -12,6 +12,7 @@
     "@react-three/drei": "^9.88.16",
     "@react-three/fiber": "^8.15.11",
     "@react-three/postprocessing": "^2.15.11",
+    "@supabase/supabase-js": "^2.89.0",
     "clsx": "^2.0.0",
     "gsap": "^3.12.2",
     "lucide-react": "^0.292.0",

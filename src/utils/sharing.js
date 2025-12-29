@@ -1,15 +1,14 @@
-/**
- * Utility for photo sharing and cloud persistence
- */
+import { createClient } from '@supabase/supabase-js';
+import useStore from '../store';
+
+// --- CONFIGURATION ---
+// Replace these with your actual Supabase project details
+const SUPABASE_URL = 'https://tkahjrcvmawogghkswdi.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_d4Scvt92j5e_r75-wDGTEA_Al2e48nb';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const IMGBB_API_KEY = '6d207e02197a3d40d4094d1a2932a97f'; // Public test key
-
-// Configure your NAS URL here. Example: 'http://192.168.1.100:3001'
-// If empty, it will use cloud fallbacks (ImgBB/JsonBlob)
-export const NAS_URL = 'https://cite-thee-selection-reading.trycloudflare.com'; 
-export const NAS_API_KEY = 'merry_christmas_2025';
-
-import useStore from '../store';
 
 /**
  * Uploads a file or data URL 
@@ -19,31 +18,34 @@ export async function uploadImage(target) {
   if (useStore.getState().isReadOnly) {
     throw new Error('Action restricted: Read-only mode active');
   }
-  // Try NAS first if configured
-  if (NAS_URL) {
-    try {
-      const formData = new FormData();
-      if (typeof target === 'string' && (target.startsWith('data:') || target.startsWith('blob:'))) {
-        const response = await fetch(target);
-        const blob = await response.blob();
-        formData.append('image', blob, 'memory.jpg');
-      } else {
-        formData.append('image', target);
-      }
 
-      const res = await fetch(`${NAS_URL}/api/upload`, {
-        method: 'POST',
-        headers: { 'X-API-Key': NAS_API_KEY },
-        body: formData
-      });
-      const data = await res.json();
-      if (data.success) return data.url;
-    } catch (err) {
-      console.warn("NAS Upload failed, falling back to ImgBB:", err);
+  // 1. Try Supabase Storage first for all users
+  try {
+    let blob;
+    if (typeof target === 'string' && (target.startsWith('data:') || target.startsWith('blob:'))) {
+      const response = await fetch(target);
+      blob = await response.blob();
+    } else {
+      blob = target;
     }
+
+    const fileName = `memory-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
+    const { data, error } = await supabase.storage
+      .from('memories')
+      .upload(fileName, blob, { contentType: 'image/jpeg' });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('memories')
+      .getPublicUrl(data.path);
+
+    return publicUrl;
+  } catch (err) {
+    console.warn("Supabase Upload failed, falling back to ImgBB:", err);
   }
 
-  // Fallback to ImgBB
+  // 2. Fallback -> Use ImgBB
   const formData = new FormData();
   if (typeof target === 'string' && (target.startsWith('data:') || target.startsWith('blob:'))) {
     const response = await fetch(target);
@@ -75,24 +77,26 @@ export async function saveToCloud(state) {
   if (useStore.getState().isReadOnly) {
     throw new Error('Action restricted: Read-only mode active');
   }
-  if (NAS_URL) {
-    try {
-      const res = await fetch(`${NAS_URL}/api/records`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-API-Key': NAS_API_KEY
-        },
-        body: JSON.stringify(state)
-      });
-      const data = await res.json();
-      if (data.success) return data.id;
-    } catch (err) {
-      console.warn("NAS Save failed, falling back to JsonBlob:", err);
-    }
+
+  // 1. Try Supabase Database first for all users
+  try {
+    const { data, error } = await supabase
+      .from('records')
+      .insert([{
+        photos: state.photos,
+        bgm_url: state.bgmUrl,
+        bgm_name: state.bgmName,
+        config: state.config
+      }])
+      .select();
+
+    if (error) throw error;
+    return data[0].id;
+  } catch (err) {
+    console.warn("Supabase Save failed, falling back to JsonBlob:", err);
   }
 
-  // Fallback to JsonBlob
+  // 2. Fallback -> Use JsonBlob
   const response = await fetch('https://jsonblob.com/api/jsonBlob', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -107,28 +111,64 @@ export async function saveToCloud(state) {
  * Updates existing record
  */
 export async function updateOnCloud(id, state) {
-  if (NAS_URL) {
-    try {
-      const res = await fetch(`${NAS_URL}/api/records/${id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-API-Key': NAS_API_KEY
-        },
-        body: JSON.stringify(state)
-      });
-      const data = await res.json();
-      if (data.success) return id;
-    } catch (err) {
-      console.warn("NAS Update failed, falling back to JsonBlob:", err);
+  // Try Supabase first
+  try {
+    const { error } = await supabase
+      .from('records')
+      .update({
+        photos: state.photos,
+        bgm_url: state.bgmUrl,
+        bgm_name: state.bgmName,
+        config: state.config
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+    return id;
+  } catch (err) {
+    console.warn("Supabase Update failed, trying JsonBlob fallback:", err);
+  }
+  
+  // Minimal fallback for JsonBlob update if needed
+  try {
+    const response = await fetch(`https://jsonblob.com/api/jsonBlob/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(state)
+    });
+    if (response.ok) return id;
+  } catch(e) {}
+  
+  return id;
+}
+
+/**
+ * Fetch record from Supabase or JsonBlob
+ */
+export async function getFromCloud(id) {
+  // Try Supabase first (if ID looks like a UUID or just check both)
+  try {
+    const { data, error } = await supabase
+      .from('records')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (data) {
+      return {
+        photos: data.photos,
+        bgmUrl: data.bgm_url,
+        bgmName: data.bgm_name,
+        config: data.config
+      };
     }
+  } catch (err) {
+    console.warn("Supabase fetch failed, trying JsonBlob...");
   }
 
-  const response = await fetch(`https://jsonblob.com/api/jsonBlob/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify(state)
-  });
-  if (response.ok) return id;
-  throw new Error('Cloud update failed');
+  // Fallback to JsonBlob
+  const response = await fetch(`https://jsonblob.com/api/jsonBlob/${id}`);
+  if (response.ok) return await response.json();
+  
+  throw new Error('Record not found');
 }

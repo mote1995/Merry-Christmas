@@ -27,44 +27,40 @@ export default function App() {
     // 2. Check for Cloud ID
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
+    const isAdmin = params.get('admin') === 'true';
+
+    if (isAdmin) {
+      useStore.getState().setIsAuthorized(true);
+      console.log("Admin session detected - NAS access enabled 🛠️");
+    }
+
     if (id) {
       // Security: Check if this user owns this ID
       const ownedIds = JSON.parse(localStorage.getItem('festive_owned_ids') || '[]');
       const isOwner = ownedIds.includes(id);
       
       // If not owner, set to read-only
-      if (!isOwner) {
+      if (!isOwner && !isAdmin) {
         useStore.getState().setIsReadOnly(true);
         console.log("Viewing shared gift - Read-only mode enabled 🛡️");
       }
 
-      const { NAS_URL } = require('./utils/sharing');
-      const fetchUrl = NAS_URL 
-        ? `${NAS_URL}/api/records/${id}`
-        : `https://jsonblob.com/api/jsonBlob/${id}`;
+      // If owner, they are naturally authorized for NAS (now Supabase)
+      if (isOwner) {
+        useStore.getState().setIsAuthorized(true);
+      }
 
-      fetch(fetchUrl)
-        .then(res => res.json())
+      const { getFromCloud } = require('./utils/sharing');
+      getFromCloud(id)
         .then(data => {
           useStore.getState().setSharedId(id);
           // Crucial: When loading a shared link, we MUST replace the local state 
-          // with the shared state to avoid trying to load sender's local 'blob:' URLs
           useStore.getState().setPhotos(data.photos || []); 
           if (data.bgmName && data.bgmUrl) useStore.getState().setBgm(data.bgmUrl, data.bgmName);
           if (data.config) useStore.getState().setConfig(data.config);
         })
         .catch(err => {
-          console.error("Failed to load state, trying fallback:", err);
-          // Fallback if NAS failed but ID might be from JsonBlob
-          if (NAS_URL) {
-             fetch(`https://jsonblob.com/api/jsonBlob/${id}`)
-               .then(res => res.json())
-               .then(data => {
-                 useStore.getState().setSharedId(id);
-                 if (data.photos) useStore.getState().setPhotos(data.photos);
-                 if (data.bgmName && data.bgmUrl) useStore.getState().setBgm(data.bgmUrl, data.bgmName);
-               }).catch(e => console.error("All fallback failed:", e));
-          }
+          console.error("Failed to load state from cloud:", err);
         });
     }
   }, []);

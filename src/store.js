@@ -62,6 +62,10 @@ const useStore = create((set) => ({
   // Read-only mode (security hardening)
   isReadOnly: false,
   setIsReadOnly: (val) => set({ isReadOnly: val }),
+  
+  // NAS Authorization (Smart Routing)
+  isAuthorized: false,
+  setIsAuthorized: (val) => set({ isAuthorized: val }),
 
   // Personalization Config
   config: {
