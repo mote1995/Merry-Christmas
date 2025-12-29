@@ -59,9 +59,9 @@ const useStore = create((set) => ({
   isKeyboardGrab: false,
   setKeyboardGrab: (val) => set({ isKeyboardGrab: val }),
 
-  // Shared Link ID
-  sharedId: null,
-  setSharedId: (id) => set({ sharedId: id }),
+  // Read-only mode (security hardening)
+  isReadOnly: false,
+  setIsReadOnly: (val) => set({ isReadOnly: val }),
 
   // Personalization Config
   config: {
@@ -73,9 +73,11 @@ const useStore = create((set) => ({
     },
     greeting: 'You have received a special memory',
   },
-  setConfig: (newConfig) => set((state) => ({ 
-    config: { ...state.config, ...newConfig } 
-  })),
+  setConfig: (newConfig) => set((state) => {
+    // Prevent config updates in read-only mode
+    if (state.isReadOnly) return {};
+    return { config: { ...state.config, ...newConfig } };
+  }),
 }));
 
 export default useStore;

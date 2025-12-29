@@ -9,10 +9,16 @@ const IMGBB_API_KEY = '6d207e02197a3d40d4094d1a2932a97f'; // Public test key
 export const NAS_URL = 'https://cite-thee-selection-reading.trycloudflare.com'; 
 export const NAS_API_KEY = 'merry_christmas_2025';
 
+import useStore from '../store';
+
 /**
  * Uploads a file or data URL 
  */
 export async function uploadImage(target) {
+  // Security check: Don't allow uploads if in read-only mode
+  if (useStore.getState().isReadOnly) {
+    throw new Error('Action restricted: Read-only mode active');
+  }
   // Try NAS first if configured
   if (NAS_URL) {
     try {
@@ -65,6 +71,10 @@ export async function uploadImage(target) {
  * Saves state 
  */
 export async function saveToCloud(state) {
+  // Security check: Don't allow saves if in read-only mode
+  if (useStore.getState().isReadOnly) {
+    throw new Error('Action restricted: Read-only mode active');
+  }
   if (NAS_URL) {
     try {
       const res = await fetch(`${NAS_URL}/api/records`, {

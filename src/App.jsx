@@ -28,6 +28,16 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     if (id) {
+      // Security: Check if this user owns this ID
+      const ownedIds = JSON.parse(localStorage.getItem('festive_owned_ids') || '[]');
+      const isOwner = ownedIds.includes(id);
+      
+      // If not owner, set to read-only
+      if (!isOwner) {
+        useStore.getState().setIsReadOnly(true);
+        console.log("Viewing shared gift - Read-only mode enabled 🛡️");
+      }
+
       const { NAS_URL } = require('./utils/sharing');
       const fetchUrl = NAS_URL 
         ? `${NAS_URL}/api/records/${id}`

@@ -10,7 +10,7 @@ const SERVICES = [
 ];
 
 export default function UI() {
-  const { phase, gesture, addPhotos, setPhotos, removePhoto, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos, sharedId, setSharedId, config, setConfig } = useStore();
+  const { phase, gesture, addPhotos, setPhotos, removePhoto, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos, sharedId, setSharedId, config, setConfig, isReadOnly } = useStore();
   const audioRef = React.useRef(null);
 
   const [isSharing, setIsSharing] = React.useState(false);
@@ -184,6 +184,14 @@ export default function UI() {
       await navigator.clipboard.writeText(shareUrl);
       
       setShareMsg('Link Ready!');
+      
+      // Security: Track this ID as owned by this device
+      const ownedIds = JSON.parse(localStorage.getItem('festive_owned_ids') || '[]');
+      if (!ownedIds.includes(id)) {
+        ownedIds.push(id);
+        localStorage.setItem('festive_owned_ids', JSON.stringify(ownedIds));
+      }
+
       setTimeout(() => setShareMsg(''), 3000);
     } catch (err) {
       console.error(err);
@@ -305,13 +313,15 @@ export default function UI() {
           <div className="h-8 w-px bg-white/10 hidden sm:block"></div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t border-white/10 sm:border-t-0 justify-center">
-            <label className="flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl cursor-pointer transition-colors group">
-              <input type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" multiple />
-              <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
-                <ImageIcon size={14} className="text-vintage-gold" />
-              </div>
-              <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">Memory</span>
-            </label>
+            {!isReadOnly && (
+              <label className="flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl cursor-pointer transition-colors group">
+                <input type="file" className="hidden" onChange={handlePhotoUpload} accept="image/*" multiple />
+                <div className="p-1.5 bg-white/5 rounded-full group-hover:bg-vintage-gold/20 transition-colors">
+                  <ImageIcon size={14} className="text-vintage-gold" />
+                </div>
+                <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">Memory</span>
+              </label>
+            )}
 
 
               
@@ -326,7 +336,7 @@ export default function UI() {
             </button>
 
             <button 
-              onClick={handleShare}
+              onClick={isReadOnly ? () => window.location.href = window.location.origin + window.location.pathname : handleShare}
               disabled={isSharing}
               className={`flex flex-col items-center gap-1 py-1.5 px-3 hover:bg-white/10 rounded-xl transition-colors group relative ${isSharing ? 'opacity-50' : ''}`}
             >
@@ -338,7 +348,7 @@ export default function UI() {
                 )}
               </div>
               <span className="text-[9px] font-bold text-vintage-gold uppercase tracking-widest">
-                {shareMsg || 'Create Link'}
+                {shareMsg || (isReadOnly ? 'Make My Own' : 'Create Link')}
               </span>
             </button>
           </div>
@@ -372,14 +382,16 @@ export default function UI() {
                   {photos.map((photo) => (
                     <div key={photo.id} className="relative shrink-0 w-12 h-12 rounded-xl overflow-hidden border border-white/10 snap-center group/photo flex-none bg-white/5">
                       <img src={photo.url} alt="memory" className="w-full h-full object-cover opacity-80 group-hover/photo:opacity-100 transition-opacity" />
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); removePhoto(photo.id); }}
-                        className="absolute inset-0 bg-red-500/80 opacity-0 group-hover/photo:opacity-100 flex items-center justify-center transition-all hover:bg-red-500"
-                        title="Delete Memory"
-                        onPointerDown={(e) => e.stopPropagation()}
-                      >
-                        <Trash2 size={14} className="text-white" />
-                      </button>
+                        {!isReadOnly && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); removePhoto(photo.id); }}
+                            className="absolute inset-0 bg-red-500/80 opacity-0 group-hover/photo:opacity-100 flex items-center justify-center transition-all hover:bg-red-500"
+                            title="Delete Memory"
+                            onPointerDown={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 size={14} className="text-white" />
+                          </button>
+                        )}
                     </div>
                   ))}
                 </div>
@@ -387,84 +399,85 @@ export default function UI() {
             </div>
           )}
 
-          {/* Personalization Panel */}
-          <div className="mt-4 flex flex-col gap-2">
-            <button 
-              onClick={(e) => { e.stopPropagation(); setShowPersonalize(!showPersonalize); }}
-              className="w-full py-2 px-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-vintage-gold text-[10px] font-bold uppercase tracking-widest transition-all"
-            >
-              {showPersonalize ? 'Close Personalization' : 'Personalize Gift'}
-            </button>
+          {!isReadOnly && (
+            <div className="mt-4 flex flex-col gap-2">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowPersonalize(!showPersonalize); }}
+                className="w-full py-2 px-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-vintage-gold text-[10px] font-bold uppercase tracking-widest transition-all"
+              >
+                {showPersonalize ? 'Close Personalization' : 'Personalize Gift'}
+              </button>
 
-            {showPersonalize && (
-              <div className="bg-black/40 backdrop-blur-md border border-white/10 p-4 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="space-y-1">
-                  <label className="text-[9px] text-white/50 uppercase tracking-widest ml-1">Recipient Name</label>
-                  <input 
-                    type="text" 
-                    value={config.recipientName}
-                    onChange={(e) => setConfig({ recipientName: e.target.value })}
-                    placeholder="Enter name..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-vintage-gold/50"
-                    onPointerDown={(e) => e.stopPropagation()}
-                  />
-                </div>
+              {showPersonalize && (
+                <div className="bg-black/40 backdrop-blur-md border border-white/10 p-4 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-1">
+                    <label className="text-[9px] text-white/50 uppercase tracking-widest ml-1">Recipient Name</label>
+                    <input 
+                      type="text" 
+                      value={config.recipientName}
+                      onChange={(e) => setConfig({ recipientName: e.target.value })}
+                      placeholder="Enter name..."
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-vintage-gold/50"
+                      onPointerDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[9px] text-white/50 uppercase tracking-widest ml-1">Theme Color</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { 
-                        name: 'Pink Gold', 
-                        tree: ['#FFB6C1', '#FF69B4'], 
-                        ornaments: ['#D4AF37', '#FFF5EE', '#FFD700', '#E0BFB8'],
-                        preview: 'linear-gradient(135deg, #FFB6C1, #D4AF37)'
-                      },
-                      { 
-                        name: 'Emerald Gold', 
-                        tree: ['#2d5a27', '#1a3a1a'], 
-                        ornaments: ['#D4AF37', '#FF0000', '#F7E7CE', '#C0C0C0'],
-                        preview: 'linear-gradient(135deg, #2d5a27, #D4AF37)'
-                      },
-                      { 
-                        name: 'Vintage Olive', 
-                        tree: ['#827717', '#D4AF37'], 
-                        ornaments: ['#FFD700', '#FFA000'],
-                        preview: 'linear-gradient(135deg, #827717, #D4AF37)'
-                      },
-                      { 
-                        name: 'Cyber Dream', 
-                        tree: ['#00BCD4', '#9C27B0'], 
-                        ornaments: ['#E0F7FA', '#FF4081'],
-                        preview: 'linear-gradient(135deg, #00BCD4, #9C27B0)'
-                      }
-                    ].map((t) => (
-                      <button
-                        key={t.name}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => setConfig({ palette: { name: t.name, tree: t.tree, ornaments: t.ornaments } })}
-                        className={`flex items-center gap-2 p-2 rounded-xl border-2 transition-all hover:scale-105 ${config.palette.name === t.name ? 'border-vintage-gold bg-white/10' : 'border-transparent bg-white/5 opacity-60'}`}
-                      >
-                        <div className="w-4 h-4 rounded-full" style={{ background: t.preview }} />
-                        <span className="text-[9px] text-white font-bold uppercase tracking-tighter">{t.name}</span>
-                      </button>
-                    ))}
+                  <div className="space-y-1">
+                    <label className="text-[9px] text-white/50 uppercase tracking-widest ml-1">Theme Color</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { 
+                          name: 'Pink Gold', 
+                          tree: ['#FFB6C1', '#FF69B4'], 
+                          ornaments: ['#D4AF37', '#FFF5EE', '#FFD700', '#E0BFB8'],
+                          preview: 'linear-gradient(135deg, #FFB6C1, #D4AF37)'
+                        },
+                        { 
+                          name: 'Emerald Gold', 
+                          tree: ['#2d5a27', '#1a3a1a'], 
+                          ornaments: ['#D4AF37', '#FF0000', '#F7E7CE', '#C0C0C0'],
+                          preview: 'linear-gradient(135deg, #2d5a27, #D4AF37)'
+                        },
+                        { 
+                          name: 'Vintage Olive', 
+                          tree: ['#827717', '#D4AF37'], 
+                          ornaments: ['#FFD700', '#FFA000'],
+                          preview: 'linear-gradient(135deg, #827717, #D4AF37)'
+                        },
+                        { 
+                          name: 'Cyber Dream', 
+                          tree: ['#00BCD4', '#9C27B0'], 
+                          ornaments: ['#E0F7FA', '#FF4081'],
+                          preview: 'linear-gradient(135deg, #00BCD4, #9C27B0)'
+                        }
+                      ].map((t) => (
+                        <button
+                          key={t.name}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={() => setConfig({ palette: { name: t.name, tree: t.tree, ornaments: t.ornaments } })}
+                          className={`flex items-center gap-2 p-2 rounded-xl border-2 transition-all hover:scale-105 ${config.palette.name === t.name ? 'border-vintage-gold bg-white/10' : 'border-transparent bg-white/5 opacity-60'}`}
+                        >
+                          <div className="w-4 h-4 rounded-full" style={{ background: t.preview }} />
+                          <span className="text-[9px] text-white font-bold uppercase tracking-tighter">{t.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] text-white/50 uppercase tracking-widest ml-1">Custom Message</label>
+                    <textarea 
+                      value={config.greeting}
+                      onChange={(e) => setConfig({ greeting: e.target.value })}
+                      placeholder="Happy Holidays..."
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-vintage-gold/50 h-16 resize-none"
+                      onPointerDown={(e) => e.stopPropagation()}
+                    />
                   </div>
                 </div>
-
-                <div className="space-y-1">
-                  <label className="text-[9px] text-white/50 uppercase tracking-widest ml-1">Custom Message</label>
-                  <textarea 
-                    value={config.greeting}
-                    onChange={(e) => setConfig({ greeting: e.target.value })}
-                    placeholder="Happy Holidays..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-vintage-gold/50 h-16 resize-none"
-                    onPointerDown={(e) => e.stopPropagation()}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>
