@@ -10,6 +10,7 @@ const SERVICES = [
 ];
 
 export default function UI() {
+  console.log("[UI] Sharing Utils Check:", { uploadImage: typeof uploadImage, saveToCloud: typeof saveToCloud });
   const { phase, gesture, addPhotos, setPhotos, removePhoto, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos, sharedId, setSharedId, config, setConfig, isReadOnly } = useStore();
   const audioRef = React.useRef(null);
 
@@ -145,29 +146,32 @@ export default function UI() {
   const handleShare = async () => {
     setIsSharing(true);
     setShareMsg('Uploading...');
+    console.log("[Share] Starting process...");
     try {
-      // 1. Prepare photos (upload local blobs)
+      // 1. Prepare photos
       const currentPhotos = [...useStore.getState().photos];
+      console.log(`[Share] Processing ${currentPhotos.length} photos`);
+      
       const updatedPhotos = await Promise.all(currentPhotos.map(async (photo) => {
         if (photo.url.startsWith('blob:') || photo.url.startsWith('data:')) {
           try {
+            console.log(`[Share] Uploading: ${photo.id}`);
             const cloudUrl = await uploadImage(photo.url);
             return { ...photo, url: cloudUrl };
           } catch (e) {
-            console.warn("Failed to upload a photo, keeping local:", e);
+            console.error(`[Share] Upload failed for ${photo.id}:`, e);
             return photo;
           }
         }
         return photo;
       }));
       
-      // 2. Filter out any photos that failed to upload (no blob/data URLs allowed in cloud save)
       const cloudOnlyPhotos = updatedPhotos.filter(p => !p.url.startsWith('blob:') && !p.url.startsWith('data:'));
+      console.log(`[Share] Cloud-ready photos: ${cloudOnlyPhotos.length}`);
 
-      // Update store with final cloud URLs
       setPhotos(cloudOnlyPhotos);
 
-      // 3. Save state
+      // 2. Save state
       const stateToSave = {
         photos: cloudOnlyPhotos,
         bgmUrl: bgmUrl.startsWith('blob:') ? '' : bgmUrl,
@@ -175,17 +179,34 @@ export default function UI() {
         config
       };
 
+      console.log("[Share] Saving records to Supabase...");
       setShareMsg('Generating Link...');
+      
       const id = await saveToCloud(stateToSave);
+      console.log("[Share] Record saved, ID:", id);
+      
+      if (!id) throw new Error("No ID returned from cloud save");
+      
       setSharedId(id);
 
       // 3. Generate link
       const shareUrl = `${window.location.origin}${window.location.pathname}?id=${id}`;
-      await navigator.clipboard.writeText(shareUrl);
+      console.log("[Share] Generated URL:", shareUrl);
+
+      // Copy to clipboard with fallback
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(shareUrl);
+          console.log("[Share] Copied to clipboard");
+        } else {
+          console.warn("[Share] Clipboard API not available");
+        }
+      } catch (clipErr) {
+        console.warn("[Share] Clipboard write failed:", clipErr);
+      }
       
       setShareMsg('Link Ready!');
       
-      // Security: Track this ID as owned by this device
       const ownedIds = JSON.parse(localStorage.getItem('festive_owned_ids') || '[]');
       if (!ownedIds.includes(id)) {
         ownedIds.push(id);
@@ -194,9 +215,11 @@ export default function UI() {
 
       setTimeout(() => setShareMsg(''), 3000);
     } catch (err) {
-      console.error(err);
-      setShareMsg('Error');
-      setTimeout(() => setShareMsg(''), 3000);
+      console.error("[Share] Fatal error:", err);
+      const errMsg = err.message || 'Share Failed';
+      setShareMsg(errMsg.substring(0, 20) + (errMsg.length > 20 ? '...' : ''));
+      alert("Error: " + errMsg); // Visible feedback
+      setTimeout(() => setShareMsg(''), 5000);
     } finally {
       setIsSharing(false);
     }

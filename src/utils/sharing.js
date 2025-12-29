@@ -1,48 +1,68 @@
-import { createClient } from '@supabase/supabase-js';
+// import { createClient } from '@supabase/supabase-js'; // Use global from CDN
 import useStore from '../store';
 
 // --- CONFIGURATION ---
-// Replace these with your actual Supabase project details
 const SUPABASE_URL = 'https://tkahjrcvmawogghkswdi.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_d4Scvt92j5e_r75-wDGTEA_Al2e48nb';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabase;
+try {
+  // Use the global object provided by the CDN script tag
+  const createClient = window.supabase?.createClient;
+  if (typeof createClient === 'function') {
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log("[Supabase] Initialized via CDN global");
+  } else {
+    throw new Error("Supabase CDN not loaded yet or failed");
+  }
+} catch (e) {
+  console.error("[Supabase] CDN Init fail:", e);
+}
 
-const IMGBB_API_KEY = '6d207e02197a3d40d4094d1a2932a97f'; // Public test key
+const IMGBB_API_KEY = '6d207e02197a3d40d4094d1a2932a97f';
 
 /**
  * Uploads a file or data URL 
  */
 export async function uploadImage(target) {
-  // Security check: Don't allow uploads if in read-only mode
-  if (useStore.getState().isReadOnly) {
-    throw new Error('Action restricted: Read-only mode active');
-  }
+  if (useStore.getState().isReadOnly) throw new Error('Action restricted: Read-only mode active');
 
-  // 1. Try Supabase Storage first for all users
-  try {
-    let blob;
-    if (typeof target === 'string' && (target.startsWith('data:') || target.startsWith('blob:'))) {
-      const response = await fetch(target);
-      blob = await response.blob();
-    } else {
-      blob = target;
+  console.log("[uploadImage] Starting upload...");
+
+  // 1. Try Supabase Storage
+  if (supabase && supabase.storage) {
+    try {
+      let blob;
+      if (typeof target === 'string' && (target.startsWith('data:') || target.startsWith('blob:'))) {
+        const response = await fetch(target);
+        blob = await response.blob();
+      } else {
+        blob = target;
+      }
+
+      const fileName = `memory-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
+      console.log(`[uploadImage] Attempting Supabase upload: ${fileName}`);
+      
+      const { data, error } = await supabase.storage
+        .from('memories')
+        .upload(fileName, blob, { contentType: 'image/jpeg' });
+
+      if (error) {
+        console.error("[uploadImage] Supabase error:", error);
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('memories')
+        .getPublicUrl(data.path);
+
+      console.log("[uploadImage] Supabase upload success:", publicUrl);
+      return publicUrl;
+    } catch (err) {
+      console.warn("[uploadImage] Supabase failed, falling back:", err);
     }
-
-    const fileName = `memory-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
-    const { data, error } = await supabase.storage
-      .from('memories')
-      .upload(fileName, blob, { contentType: 'image/jpeg' });
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('memories')
-      .getPublicUrl(data.path);
-
-    return publicUrl;
-  } catch (err) {
-    console.warn("Supabase Upload failed, falling back to ImgBB:", err);
+  } else {
+    console.warn("[uploadImage] Supabase storage not available, using fallback");
   }
 
   // 2. Fallback -> Use ImgBB
@@ -64,7 +84,7 @@ export async function uploadImage(target) {
     if (data.success) return data.data.url;
     throw new Error(data.error?.message || 'Upload failed');
   } catch (err) {
-    console.error("Cloud Upload Error:", err);
+    console.error("[uploadImage] ImgBB fallback failed:", err);
     throw err;
   }
 }
@@ -73,30 +93,39 @@ export async function uploadImage(target) {
  * Saves state 
  */
 export async function saveToCloud(state) {
-  // Security check: Don't allow saves if in read-only mode
-  if (useStore.getState().isReadOnly) {
-    throw new Error('Action restricted: Read-only mode active');
-  }
+  if (useStore.getState().isReadOnly) throw new Error('Action restricted: Read-only mode active');
 
-  // 1. Try Supabase Database first for all users
-  try {
-    const { data, error } = await supabase
-      .from('records')
-      .insert([{
-        photos: state.photos,
-        bgm_url: state.bgmUrl,
-        bgm_name: state.bgmName,
-        config: state.config
-      }])
-      .select();
+  console.log("[saveToCloud] Attempting save...");
 
-    if (error) throw error;
-    return data[0].id;
-  } catch (err) {
-    console.warn("Supabase Save failed, falling back to JsonBlob:", err);
+  // 1. Try Supabase
+  if (supabase && supabase.from) {
+    try {
+      console.log("[saveToCloud] Inserting into records table...");
+      const { data, error } = await supabase
+        .from('records')
+        .insert([{
+          photos: state.photos,
+          bgm_url: state.bgmUrl,
+          bgm_name: state.bgmName,
+          config: state.config
+        }])
+        .select();
+
+      if (error) {
+        console.error("[saveToCloud] Supabase error:", error);
+        throw error;
+      }
+      if (data && data[0]) {
+        console.log("[saveToCloud] Supabase save success:", data[0].id);
+        return data[0].id;
+      }
+    } catch (err) {
+      console.warn("[saveToCloud] Supabase failed, falling back:", err);
+    }
   }
 
   // 2. Fallback -> Use JsonBlob
+  console.log("[saveToCloud] Using JsonBlob fallback...");
   const response = await fetch('https://jsonblob.com/api/jsonBlob', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -111,25 +140,25 @@ export async function saveToCloud(state) {
  * Updates existing record
  */
 export async function updateOnCloud(id, state) {
-  // Try Supabase first
-  try {
-    const { error } = await supabase
-      .from('records')
-      .update({
-        photos: state.photos,
-        bgm_url: state.bgmUrl,
-        bgm_name: state.bgmName,
-        config: state.config
-      })
-      .eq('id', id);
+  if (supabase && supabase.from) {
+    try {
+      const { error } = await supabase
+        .from('records')
+        .update({
+          photos: state.photos,
+          bgm_url: state.bgmUrl,
+          bgm_name: state.bgmName,
+          config: state.config
+        })
+        .eq('id', id);
 
-    if (error) throw error;
-    return id;
-  } catch (err) {
-    console.warn("Supabase Update failed, trying JsonBlob fallback:", err);
+      if (error) throw error;
+      return id;
+    } catch (err) {
+      console.warn("Supabase Update failed, trying JsonBlob fallback:", err);
+    }
   }
   
-  // Minimal fallback for JsonBlob update if needed
   try {
     const response = await fetch(`https://jsonblob.com/api/jsonBlob/${id}`, {
       method: 'PUT',
@@ -146,29 +175,34 @@ export async function updateOnCloud(id, state) {
  * Fetch record from Supabase or JsonBlob
  */
 export async function getFromCloud(id) {
-  // Try Supabase first (if ID looks like a UUID or just check both)
-  try {
-    const { data, error } = await supabase
-      .from('records')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+  if (supabase && supabase.from) {
+    try {
+      const { data, error } = await supabase
+        .from('records')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
 
-    if (data) {
-      return {
-        photos: data.photos,
-        bgmUrl: data.bgm_url,
-        bgmName: data.bgm_name,
-        config: data.config
-      };
+      if (data) {
+        return {
+          photos: data.photos,
+          bgmUrl: data.bgm_url,
+          bgmName: data.bgm_name,
+          config: data.config
+        };
+      }
+    } catch (err) {
+      console.warn("Supabase fetch failed, trying JsonBlob...");
     }
-  } catch (err) {
-    console.warn("Supabase fetch failed, trying JsonBlob...");
   }
 
-  // Fallback to JsonBlob
   const response = await fetch(`https://jsonblob.com/api/jsonBlob/${id}`);
   if (response.ok) return await response.json();
   
   throw new Error('Record not found');
+}
+
+// --- DEBUG EXPORT ---
+if (typeof window !== 'undefined') {
+  window.__sharing = { uploadImage, saveToCloud, getFromCloud, supabase };
 }

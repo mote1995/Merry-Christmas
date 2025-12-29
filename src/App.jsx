@@ -3,6 +3,7 @@ import Scene from './components/Scene';
 import HandTracker from './components/HandTracker';
 import UI from './components/UI';
 import useStore from './store';
+import { getFromCloud } from './utils/sharing';
 
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -35,22 +36,12 @@ export default function App() {
     }
 
     if (id) {
-      // Security: Check if this user owns this ID
+      // Security Check
       const ownedIds = JSON.parse(localStorage.getItem('festive_owned_ids') || '[]');
       const isOwner = ownedIds.includes(id);
-      
-      // If not owner, set to read-only
-      if (!isOwner && !isAdmin) {
-        useStore.getState().setIsReadOnly(true);
-        console.log("Viewing shared gift - Read-only mode enabled 🛡️");
-      }
+      if (!isOwner && !isAdmin) useStore.getState().setIsReadOnly(true);
+      if (isOwner) useStore.getState().setIsAuthorized(true);
 
-      // If owner, they are naturally authorized for NAS (now Supabase)
-      if (isOwner) {
-        useStore.getState().setIsAuthorized(true);
-      }
-
-      const { getFromCloud } = require('./utils/sharing');
       getFromCloud(id)
         .then(data => {
           useStore.getState().setSharedId(id);
