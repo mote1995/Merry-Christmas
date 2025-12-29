@@ -8,6 +8,10 @@ const useStore = create((set) => ({
   // Gesture: 'none' | 'open' | 'fist' | 'pinch'
   gesture: 'none',
   setGesture: (gesture) => set({ gesture }),
+ 
+  // Cloud ID
+  sharedId: null,
+  setSharedId: (id) => set({ sharedId: id }),
 
   // Hand data: results from MediaPipe
   handResults: null,
