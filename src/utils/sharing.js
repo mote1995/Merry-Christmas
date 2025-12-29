@@ -23,6 +23,34 @@ function getSupabase() {
   return null;
 }
 
+/**
+ * Direct REST fetch (much faster than waiting for SDK)
+ */
+async function fastFetchFromSupabase(id) {
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/records?id=eq.${id}&select=*`;
+    const response = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (data && data[0]) {
+      return {
+        photos: data[0].photos,
+        bgmUrl: data[0].bgm_url,
+        bgmName: data[0].bgm_name,
+        config: data[0].config
+      };
+    }
+  } catch (e) {
+    console.warn("[Supabase] Fast fetch failed:", e);
+  }
+  return null;
+}
+
 const IMGBB_API_KEY = '6d207e02197a3d40d4094d1a2932a97f';
 
 /**
@@ -182,6 +210,11 @@ export async function updateOnCloud(id, state) {
  * Fetch record from Supabase or JsonBlob
  */
 export async function getFromCloud(id) {
+  // 1. Try Fast REST Path (No SDK needed)
+  const fastData = await fastFetchFromSupabase(id);
+  if (fastData) return fastData;
+
+  // 2. Try SDK Path (if already loaded)
   const supabase = getSupabase();
   if (supabase && supabase.from) {
     try {

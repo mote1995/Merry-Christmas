@@ -8,6 +8,8 @@ import { getFromCloud } from './utils/sharing';
 import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
+  const [isFetchingInfo, setIsFetchingInfo] = React.useState(false);
+
   React.useEffect(() => {
     // 0. Cleanup Export Loading Guard if exists (React-side confirmation)
     const loader = document.getElementById('export-loading');
@@ -52,6 +54,9 @@ export default function App() {
         })
         .catch(err => {
           console.error("Failed to load state from cloud:", err);
+        })
+        .finally(() => {
+          setIsFetchingInfo(false);
         });
     }
   }, []);
@@ -61,7 +66,7 @@ export default function App() {
       <ErrorBoundary>
         <Scene />
         <HandTracker />
-        <UI />
+        <UI isFetchingInfo={isFetchingInfo} />
       </ErrorBoundary>
     </div>
   );

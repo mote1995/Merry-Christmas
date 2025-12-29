@@ -9,7 +9,7 @@ const SERVICES = [
   { url: 'https://api.myjson.online/v1/records', method: 'POST' } // Fallback
 ];
 
-export default function UI() {
+export default function UI({ isFetchingInfo }) {
   console.log("[UI] Sharing Utils Check:", { uploadImage: typeof uploadImage, saveToCloud: typeof saveToCloud });
   const { phase, gesture, addPhotos, setPhotos, removePhoto, bgmUrl, bgmName, setBgm, isPlaying, togglePlay, setGesture, hasStarted, setHasStarted, isCameraOpen, toggleCamera, photos, sharedId, setSharedId, config, setConfig, isReadOnly } = useStore();
   const audioRef = React.useRef(null);
@@ -237,14 +237,15 @@ export default function UI() {
           <div className={`pointer-events-auto transition-opacity duration-500 flex flex-col items-center gap-8 ${hasStarted ? 'opacity-0' : 'opacity-100 delay-300'}`}>
             <button
               onClick={handleStart}
-              className="group relative px-6 py-2 sm:px-10 sm:py-3 bg-gradient-to-r from-vintage-gold to-yellow-500 rounded-full text-black font-bold transition-all hover:scale-110 active:scale-95 shadow-[0_0_50px_rgba(212,175,55,0.5)]"
+              disabled={isFetchingInfo}
+              className={`group relative px-6 py-2 sm:px-10 sm:py-3 bg-gradient-to-r from-vintage-gold to-yellow-500 rounded-full text-black font-bold transition-all active:scale-95 shadow-[0_0_50px_rgba(212,175,55,0.5)] ${isFetchingInfo ? 'opacity-50 cursor-wait' : 'hover:scale-110'}`}
             >
               <div className="flex items-center gap-4">
                 <div className="bg-black/10 p-2 sm:p-2.5 rounded-full group-hover:bg-black/20 transition-colors">
-                  <Play className="w-5 h-5 sm:w-7 sm:h-7" fill="currentColor" />
+                  {isFetchingInfo ? <Loader className="w-5 h-5 sm:w-7 sm:h-7 animate-spin" /> : <Play className="w-5 h-5 sm:w-7 sm:h-7" fill="currentColor" />}
                 </div>
                 <span className="font-cursive text-3xl sm:text-4xl leading-tight">
-                  {config.recipientName ? `Merry Christmas, ${config.recipientName}` : 'Merry Christmas'}
+                  {isFetchingInfo ? 'Preparing gift...' : (config.recipientName ? `Merry Christmas, ${config.recipientName}` : 'Merry Christmas')}
                 </span>
               </div>
             </button>
