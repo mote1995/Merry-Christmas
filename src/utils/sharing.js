@@ -5,18 +5,22 @@ import useStore from '../store';
 const SUPABASE_URL = 'https://tkahjrcvmawogghkswdi.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_d4Scvt92j5e_r75-wDGTEA_Al2e48nb';
 
-let supabase;
-try {
-  // Use the global object provided by the CDN script tag
-  const createClient = window.supabase?.createClient;
-  if (typeof createClient === 'function') {
-    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log("[Supabase] Initialized via CDN global");
-  } else {
-    throw new Error("Supabase CDN not loaded yet or failed");
+let supabaseInstance;
+
+function getSupabase() {
+  if (supabaseInstance) return supabaseInstance;
+  
+  try {
+    const createClient = window.supabase?.createClient;
+    if (typeof createClient === 'function') {
+      supabaseInstance = createClient(SUPABASE_URL, SUPABASE_KEY);
+      console.log("[Supabase] Initialized via getSupabase helper");
+      return supabaseInstance;
+    }
+  } catch (e) {
+    console.error("[Supabase] Lazy init fail:", e);
   }
-} catch (e) {
-  console.error("[Supabase] CDN Init fail:", e);
+  return null;
 }
 
 const IMGBB_API_KEY = '6d207e02197a3d40d4094d1a2932a97f';
@@ -30,6 +34,7 @@ export async function uploadImage(target) {
   console.log("[uploadImage] Starting upload...");
 
   // 1. Try Supabase Storage
+  const supabase = getSupabase();
   if (supabase && supabase.storage) {
     try {
       let blob;
@@ -98,6 +103,7 @@ export async function saveToCloud(state) {
   console.log("[saveToCloud] Attempting save...");
 
   // 1. Try Supabase
+  const supabase = getSupabase();
   if (supabase && supabase.from) {
     try {
       console.log("[saveToCloud] Inserting into records table...");
@@ -140,6 +146,7 @@ export async function saveToCloud(state) {
  * Updates existing record
  */
 export async function updateOnCloud(id, state) {
+  const supabase = getSupabase();
   if (supabase && supabase.from) {
     try {
       const { error } = await supabase
@@ -175,6 +182,7 @@ export async function updateOnCloud(id, state) {
  * Fetch record from Supabase or JsonBlob
  */
 export async function getFromCloud(id) {
+  const supabase = getSupabase();
   if (supabase && supabase.from) {
     try {
       const { data, error } = await supabase
@@ -204,5 +212,11 @@ export async function getFromCloud(id) {
 
 // --- DEBUG EXPORT ---
 if (typeof window !== 'undefined') {
-  window.__sharing = { uploadImage, saveToCloud, getFromCloud, supabase };
+  window.__sharing = { 
+    uploadImage, 
+    saveToCloud, 
+    getFromCloud, 
+    getSupabase,
+    get supabase() { return getSupabase(); }
+  };
 }
